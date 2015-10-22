@@ -10,7 +10,9 @@ curve2 <- function (expr, from = NULL, to = NULL, n = 101, add = FALSE,
     if(is.null(dots)){
       expr <- call(as.character(sexpr), as.name(xname))
     } else {
-      expr <- call(as.character(sexpr), as.name(xname), dots)
+      dots <- as.list(substitute(list(...)))[-1L]
+      arg <- c(list(expr, as.name("x")), dots)
+      expr <- as.call(arg)
       }
   }  else {
     if (!((is.call(sexpr) || is.expression(sexpr)) && xname %in% 
