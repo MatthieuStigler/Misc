@@ -2,7 +2,7 @@
 
 curve2 <- function (expr, from = NULL, to = NULL, n = 101, add = FALSE, 
           type = "l", xname = "x", xlab = xname, ylab = NULL, log = NULL, 
-          xlim = NULL, ...) 
+          xlim = NULL, lty=1, col=1, ...) 
 {
   sexpr <- substitute(expr)
   dots <- substitute(...)
@@ -62,9 +62,9 @@ curve2 <- function (expr, from = NULL, to = NULL, n = 101, add = FALSE,
   if (length(y) != length(x)) 
     stop("'expr' did not evaluate to an object of length 'n'")
   if (isTRUE(add)) 
-    lines(x = x, y = y, type = type)
+    lines(x = x, y = y, type = type, lty=lty, col=col)
   else plot(x = x, y = y, type = type, xlab = xlab, ylab = ylab, 
-            xlim = xlim, log = lg)
+            xlim = xlim, log = lg, lty=lty, col=col)
   invisible(list(x = x, y = y))
 }
 
