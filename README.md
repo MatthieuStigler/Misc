@@ -1,2 +1,2 @@
 # Misc
-Misc personal files
+Just a few files for my own use
