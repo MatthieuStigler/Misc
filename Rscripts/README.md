@@ -3,4 +3,5 @@
 Use with: 
 
     library(devtools) 
-    source_url("https://github.com/MatthieuStigler/Misc/blob/master/Rscripts/curve2.R")
+    source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/Rscripts/curve2.R")
+
