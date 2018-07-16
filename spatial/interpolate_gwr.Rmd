@@ -1,0 +1,120 @@
+---
+title: "idw interpolation using spatially weighted regression"
+author: "Matthieu"
+date: "July 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+A common technique to do interpolation is to use inverse-distance weights to compute local means on new points. This is implemented in R for example in the package `gstat`, with funciton `idw0` or `gstat`. 
+
+An equivalent way to do this is to use spatially weighted local regression (GWR). Remembering that regressing a variable against the intercept only will give the mean of the variable, same logic predicts that using a GWR model should provide a way to do interpolation. Package `spgwr` provides funciton `gwr` which takes either a Gaussian or bi-square weighting scheme. Implementing a idw weigthing scheme is fairly easy, yet results differ importantly so far. 
+
+Three points that are unclear so far:
+
+* `spgwr` versus `gstat`: why are `gwr()` and `gstat()` not giving identical results, Inifinite or restricted bandwidth ?
+* gstat: why are `idw0()` and `gstat()` results no identical when `maxdist=Inf`?
+* `spgwr` why are so many points receving NA? I use a bandwidth of 2, and noting that the maximim minimal distance is 1.07, every new-point should at least have one neighbour!?
+ 
+## Loading and preparing data
+
+Use Columbus data, split at random for a train and test sub-samples. 
+
+```{r cars, message=FALSE}
+library(tidyverse)
+library(spgwr)
+library(gstat)
+library(rgdal)
+
+columbus_sp <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
+data(columbus, package="spData")
+
+
+set.seed(123)
+test_ids <- sample(1:nrow(columbus), size=10)
+
+col_XY <- as.matrix(columbus[,c("X", "Y")])
+
+col_sp_train <- columbus_sp[-test_ids,]
+col_sp_test <- columbus_sp[test_ids,]
+
+col_train <- columbus[-test_ids,]
+col_test <- columbus[test_ids,]
+```
+
+## Define the idw kernel for gwr
+
+```{r}
+## kernels
+gwr_iwd <-  function (dist2, d, pow=2)    {
+  w <- ifelse(dist2 > d, 0, 1/(dist2^pow))
+  w
+}
+```
+
+
+## Gwr and idw interpolation
+
+### gwr ones: 
+
+```{r}
+### Regressions
+gwr_gauss <- gwr(CRIME ~ 1, data=col_train,
+           fit.points = col_XY[test_ids,],
+           coords=col_XY[-test_ids,], bandwidth=2,
+           gweight=gwr.bisquare)
+gwr_gauss$SDF$"(Intercept)"
+
+gwr_gauss$SDF$"(Intercept)"
+
+
+gwr_idw_2 <- gwr(CRIME ~ 1, data=col_train,
+                fit.points = col_XY[test_ids,],
+                coords=col_XY[-test_ids,], bandwidth=2,
+                gweight=gwr_iwd)
+
+gwr_idw_Inf <- gwr(CRIME ~ 1, data=col_train,
+                 fit.points = col_XY[test_ids,],
+                 coords=col_XY[-test_ids,], bandwidth=Inf,
+                 gweight=gwr_iwd)
+gwr_idw_2$SDF$"(Intercept)"
+```
+
+#### gstat ones:
+
+```{r}
+gstat_2 <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
+              maxdist = 2, set = list(idp = 2)) %>%
+  predict(columbus_sp[test_ids,]) %>%
+  as_data_frame()
+
+gstat_Inf <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
+                 maxdist = Inf, set = list(idp = 2)) %>%
+  predict(columbus_sp[test_ids,]) %>%
+  as_data_frame()
+
+idw_Inf <- idw0(CRIME ~ 1, data=columbus[-test_ids,], newdata=columbus[test_ids,]) # ,y=columbus[-test_ids,"CRIME"]
+```
+
+## Compare results
+
+```{r}
+table <- data_frame(idw_Inf = as.numeric(idw_Inf),
+                   gstat_Inf = gstat_Inf$CRIME.pred,
+                   gstat_2 = gstat_2$CRIME.pred,
+                   gwr_idw_Inf = gwr_idw_Inf$SDF$"(Intercept)",
+                   gwr_gauss = gwr_gauss$SDF$"(Intercept)",
+                   gwr_idw_2 = gwr_idw_2$SDF$"(Intercept)")
+table
+```
+
+```{r}
+D <- spDists(coordinates(columbus_sp[test_ids,]),
+             coordinates(columbus_sp[test_ids,]))
+diag(D) <- NA
+apply(D, 1, min, na.rm=TRUE)
+max(apply(D, 1, min, na.rm=TRUE))
+```
