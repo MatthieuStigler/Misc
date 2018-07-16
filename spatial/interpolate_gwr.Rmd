@@ -2,7 +2,7 @@
 title: "idw interpolation using spatially weighted regression"
 author: "Matthieu"
 date: "July 16, 2018"
-output: html_document
+output: md_document #md_document
 ---
 
 ```{r setup, include=FALSE}
@@ -28,6 +28,7 @@ library(tidyverse)
 library(spgwr)
 library(gstat)
 library(rgdal)
+library(knitr)
 
 columbus_sp <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
 data(columbus, package="spData")
@@ -108,7 +109,7 @@ table <- data_frame(idw_Inf = as.numeric(idw_Inf),
                    gwr_idw_Inf = gwr_idw_Inf$SDF$"(Intercept)",
                    gwr_gauss = gwr_gauss$SDF$"(Intercept)",
                    gwr_idw_2 = gwr_idw_2$SDF$"(Intercept)")
-table
+kable(table, digits=2)
 ```
 
 ```{r}
