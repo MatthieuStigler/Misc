@@ -1,3 +1,11 @@
+-   [Loading and preparing data](#loading-and-preparing-data)
+-   [Define the idw kernel for gwr](#define-the-idw-kernel-for-gwr)
+-   [Gwr and idw interpolation](#gwr-and-idw-interpolation)
+    -   [gwr ones:](#gwr-ones)
+    -   [gstat ones:](#gstat-ones)
+-   [Compare results](#compare-results)
+-   [Compute max-min distance](#compute-max-min-distance)
+
 A common technique to do interpolation is to use inverse-distance
 weights to compute local means on new points. This is implemented in R
 for example in the package `gstat`, with funciton `idw0` or `gstat`.
@@ -15,8 +23,8 @@ Three points that are unclear so far:
 -   `spgwr` versus `gstat`: why are `gwr()` and `gstat()` not giving
     identical results, Inifinite or restricted bandwidth ? **partial
     answer**: distances in `spgwr` are already squared, so to use idw at
-    power 2 needs just: `1/d`
--   gstat: why are `idw0()` and `gstat()` results no identical when
+    power 2 needs just: `1/dist2`
+-   gstat: why are `idw0()` and `gstat()` results not identical when
     `maxdist=Inf`?
 -   `spgwr` why are so many points receving NA? I use a bandwidth of 2,
     and noting that the maximim minimal distance is 1.07, every
@@ -27,7 +35,7 @@ Loading and preparing data
 
 Use Columbus data, split at random for a train and test sub-samples.
 
-    library(tidyverse)
+    # library(tidyverse)
     library(spgwr)
     library(gstat)
     library(rgdal)
@@ -107,7 +115,7 @@ Gwr and idw interpolation
     ##  [1]       NA       NA       NA       NA       NA       NA       NA
     ##  [8] 22.54149       NA 49.86750
 
-#### gstat ones:
+### gstat ones:
 
     gstat_2_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
                   maxdist = 2, set = list(idp = 2)) 

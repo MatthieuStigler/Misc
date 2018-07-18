@@ -2,7 +2,9 @@
 title: "idw interpolation using spatially weighted regression"
 author: "Matthieu"
 date: "July 16, 2018"
-output: md_document #md_document
+output:
+  md_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -15,8 +17,8 @@ An equivalent way to do this is to use spatially weighted local regression (GWR)
 
 Three points that are unclear so far:
 
-* `spgwr` versus `gstat`: why are `gwr()` and `gstat()` not giving identical results, Inifinite or restricted bandwidth ? **partial answer**: distances in `spgwr` are already squared, so to use idw at power 2 needs just: `1/d`
-* gstat: why are `idw0()` and `gstat()` results no identical when `maxdist=Inf`?
+* `spgwr` versus `gstat`: why are `gwr()` and `gstat()` not giving identical results, Inifinite or restricted bandwidth ? **partial answer**: distances in `spgwr` are already squared, so to use idw at power 2 needs just: `1/dist2`
+* gstat: why are `idw0()` and `gstat()` results not identical when `maxdist=Inf`?
 * `spgwr` why are so many points receving NA? I use a bandwidth of 2, and noting that the maximim minimal distance is 1.07, every new-point should at least have one neighbour!?
  
 ## Loading and preparing data
@@ -24,7 +26,7 @@ Three points that are unclear so far:
 Use Columbus data, split at random for a train and test sub-samples. 
 
 ```{r cars, message=FALSE}
-library(tidyverse)
+# library(tidyverse)
 library(spgwr)
 library(gstat)
 library(rgdal)
@@ -93,7 +95,7 @@ gwr_idw_Inf_old <- gwr(CRIME ~ 1, data=col_train,
 gwr_idw_2$SDF$"(Intercept)"
 ```
 
-#### gstat ones:
+### gstat ones:
 
 ```{r}
 gstat_2_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
