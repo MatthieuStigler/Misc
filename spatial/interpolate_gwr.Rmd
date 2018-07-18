@@ -15,7 +15,7 @@ An equivalent way to do this is to use spatially weighted local regression (GWR)
 
 Three points that are unclear so far:
 
-* `spgwr` versus `gstat`: why are `gwr()` and `gstat()` not giving identical results, Inifinite or restricted bandwidth ?
+* `spgwr` versus `gstat`: why are `gwr()` and `gstat()` not giving identical results, Inifinite or restricted bandwidth ? **partial answer**: distances in `spgwr` are already squared, so to use idw at power 2 needs just: `1/d`
 * gstat: why are `idw0()` and `gstat()` results no identical when `maxdist=Inf`?
 * `spgwr` why are so many points receving NA? I use a bandwidth of 2, and noting that the maximim minimal distance is 1.07, every new-point should at least have one neighbour!?
  
@@ -50,8 +50,12 @@ col_test <- columbus[test_ids,]
 
 ```{r}
 ## kernels
-gwr_iwd <-  function (dist2, d, pow=2)    {
-  w <- ifelse(dist2 > d, 0, 1/(dist2^pow))
+gwr_iwd <-  function (dist2, d)    {
+  w <- ifelse(dist2 > d, 0, 1/dist2)
+  w
+}
+gwr_iwd_old <-  function (dist2, d)    {
+  w <- ifelse(dist2 > d, 0, 1/dist2^2)
   w
 }
 ```
@@ -65,7 +69,7 @@ gwr_iwd <-  function (dist2, d, pow=2)    {
 ### Regressions
 gwr_gauss <- gwr(CRIME ~ 1, data=col_train,
            fit.points = col_XY[test_ids,],
-           coords=col_XY[-test_ids,], bandwidth=2,
+           coords=col_XY[-test_ids,], bandwidth=2^2,
            gweight=gwr.bisquare)
 gwr_gauss$SDF$"(Intercept)"
 
@@ -74,28 +78,32 @@ gwr_gauss$SDF$"(Intercept)"
 
 gwr_idw_2 <- gwr(CRIME ~ 1, data=col_train,
                 fit.points = col_XY[test_ids,],
-                coords=col_XY[-test_ids,], bandwidth=2,
+                coords=col_XY[-test_ids,], bandwidth=2^2,
                 gweight=gwr_iwd)
 
 gwr_idw_Inf <- gwr(CRIME ~ 1, data=col_train,
                  fit.points = col_XY[test_ids,],
                  coords=col_XY[-test_ids,], bandwidth=Inf,
                  gweight=gwr_iwd)
+
+gwr_idw_Inf_old <- gwr(CRIME ~ 1, data=col_train,
+                 fit.points = col_XY[test_ids,],
+                 coords=col_XY[-test_ids,], bandwidth=Inf,
+                 gweight=gwr_iwd_old)
 gwr_idw_2$SDF$"(Intercept)"
 ```
 
 #### gstat ones:
 
 ```{r}
-gstat_2 <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
-              maxdist = 2, set = list(idp = 2)) %>%
-  predict(columbus_sp[test_ids,]) %>%
-  as_data_frame()
+gstat_2_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
+              maxdist = 2, set = list(idp = 2)) 
+gstat_2 <- as.data.frame(predict(gstat_2_mod, columbus_sp[test_ids,]))
+  
 
-gstat_Inf <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
-                 maxdist = Inf, set = list(idp = 2)) %>%
-  predict(columbus_sp[test_ids,]) %>%
-  as_data_frame()
+gstat_Inf_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
+                 maxdist = Inf, set = list(idp = 2)) 
+gstat_Inf <- as.data.frame(predict(gstat_Inf_mod, columbus_sp[test_ids,]))
 
 idw_Inf <- idw0(CRIME ~ 1, data=columbus[-test_ids,], newdata=columbus[test_ids,]) # ,y=columbus[-test_ids,"CRIME"]
 ```
@@ -103,14 +111,17 @@ idw_Inf <- idw0(CRIME ~ 1, data=columbus[-test_ids,], newdata=columbus[test_ids,
 ## Compare results
 
 ```{r}
-table <- data_frame(idw_Inf = as.numeric(idw_Inf),
-                   gstat_Inf = gstat_Inf$CRIME.pred,
-                   gstat_2 = gstat_2$CRIME.pred,
-                   gwr_idw_Inf = gwr_idw_Inf$SDF$"(Intercept)",
-                   gwr_gauss = gwr_gauss$SDF$"(Intercept)",
-                   gwr_idw_2 = gwr_idw_2$SDF$"(Intercept)")
+table <- data.frame(idw_Inf = as.numeric(idw_Inf),
+                    gstat_Inf = gstat_Inf$CRIME.pred,
+                    gwr_idw_Inf = gwr_idw_Inf$SDF$"(Intercept)",
+                    gwr_idw_Inf_old = gwr_idw_Inf_old$SDF$"(Intercept)",
+                    gstat_2 = gstat_2$CRIME.pred,
+                    gwr_idw_2 = gwr_idw_2$SDF$"(Intercept)",
+                    gwr_gauss = gwr_gauss$SDF$"(Intercept)")
 kable(table, digits=2)
 ```
+
+## Compute max-min distance
 
 ```{r}
 D <- spDists(coordinates(columbus_sp[test_ids,]),

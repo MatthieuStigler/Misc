@@ -13,7 +13,9 @@ fairly easy, yet results differ importantly so far.
 Three points that are unclear so far:
 
 -   `spgwr` versus `gstat`: why are `gwr()` and `gstat()` not giving
-    identical results, Inifinite or restricted bandwidth ?
+    identical results, Inifinite or restricted bandwidth ? **partial
+    answer**: distances in `spgwr` are already squared, so to use idw at
+    power 2 needs just: `1/d`
 -   gstat: why are `idw0()` and `gstat()` results no identical when
     `maxdist=Inf`?
 -   `spgwr` why are so many points receving NA? I use a bandwidth of 2,
@@ -57,8 +59,12 @@ Define the idw kernel for gwr
 -----------------------------
 
     ## kernels
-    gwr_iwd <-  function (dist2, d, pow=2)    {
-      w <- ifelse(dist2 > d, 0, 1/(dist2^pow))
+    gwr_iwd <-  function (dist2, d)    {
+      w <- ifelse(dist2 > d, 0, 1/dist2)
+      w
+    }
+    gwr_iwd_old <-  function (dist2, d)    {
+      w <- ifelse(dist2 > d, 0, 1/dist2^2)
       w
     }
 
@@ -70,45 +76,48 @@ Gwr and idw interpolation
     ### Regressions
     gwr_gauss <- gwr(CRIME ~ 1, data=col_train,
                fit.points = col_XY[test_ids,],
-               coords=col_XY[-test_ids,], bandwidth=2,
+               coords=col_XY[-test_ids,], bandwidth=2^2,
                gweight=gwr.bisquare)
     gwr_gauss$SDF$"(Intercept)"
 
-    ##  [1]       NA       NA       NA       NA       NA       NA       NA
-    ##  [8] 22.54149       NA 50.01349
+    ##  [1] 55.02620 48.77090 45.08100 21.31681 33.50161 31.38315 30.96545
+    ##  [8] 23.80405 36.59767 51.33628
 
     gwr_gauss$SDF$"(Intercept)"
 
-    ##  [1]       NA       NA       NA       NA       NA       NA       NA
-    ##  [8] 22.54149       NA 50.01349
+    ##  [1] 55.02620 48.77090 45.08100 21.31681 33.50161 31.38315 30.96545
+    ##  [8] 23.80405 36.59767 51.33628
 
     gwr_idw_2 <- gwr(CRIME ~ 1, data=col_train,
                     fit.points = col_XY[test_ids,],
-                    coords=col_XY[-test_ids,], bandwidth=2,
+                    coords=col_XY[-test_ids,], bandwidth=2^2,
                     gweight=gwr_iwd)
 
     gwr_idw_Inf <- gwr(CRIME ~ 1, data=col_train,
                      fit.points = col_XY[test_ids,],
                      coords=col_XY[-test_ids,], bandwidth=Inf,
                      gweight=gwr_iwd)
+
+    gwr_idw_Inf_old <- gwr(CRIME ~ 1, data=col_train,
+                     fit.points = col_XY[test_ids,],
+                     coords=col_XY[-test_ids,], bandwidth=Inf,
+                     gweight=gwr_iwd_old)
     gwr_idw_2$SDF$"(Intercept)"
 
     ##  [1]       NA       NA       NA       NA       NA       NA       NA
-    ##  [8]       NA       NA 49.00144
+    ##  [8] 22.54149       NA 49.86750
 
 #### gstat ones:
 
-    gstat_2 <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
-                  maxdist = 2, set = list(idp = 2)) %>%
-      predict(columbus_sp[test_ids,]) %>%
-      as_data_frame()
+    gstat_2_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
+                  maxdist = 2, set = list(idp = 2)) 
+    gstat_2 <- as.data.frame(predict(gstat_2_mod, columbus_sp[test_ids,]))
 
     ## [inverse distance weighted interpolation]
 
-    gstat_Inf <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
-                     maxdist = Inf, set = list(idp = 2)) %>%
-      predict(columbus_sp[test_ids,]) %>%
-      as_data_frame()
+    gstat_Inf_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
+                     maxdist = Inf, set = list(idp = 2)) 
+    gstat_Inf <- as.data.frame(predict(gstat_Inf_mod, columbus_sp[test_ids,]))
 
     ## [inverse distance weighted interpolation]
 
@@ -117,12 +126,13 @@ Gwr and idw interpolation
 Compare results
 ---------------
 
-    table <- data_frame(idw_Inf = as.numeric(idw_Inf),
-                       gstat_Inf = gstat_Inf$CRIME.pred,
-                       gstat_2 = gstat_2$CRIME.pred,
-                       gwr_idw_Inf = gwr_idw_Inf$SDF$"(Intercept)",
-                       gwr_gauss = gwr_gauss$SDF$"(Intercept)",
-                       gwr_idw_2 = gwr_idw_2$SDF$"(Intercept)")
+    table <- data.frame(idw_Inf = as.numeric(idw_Inf),
+                        gstat_Inf = gstat_Inf$CRIME.pred,
+                        gwr_idw_Inf = gwr_idw_Inf$SDF$"(Intercept)",
+                        gwr_idw_Inf_old = gwr_idw_Inf_old$SDF$"(Intercept)",
+                        gstat_2 = gstat_2$CRIME.pred,
+                        gwr_idw_2 = gwr_idw_2$SDF$"(Intercept)",
+                        gwr_gauss = gwr_gauss$SDF$"(Intercept)")
     kable(table, digits=2)
 
 <table>
@@ -130,95 +140,109 @@ Compare results
 <tr class="header">
 <th align="right">idw_Inf</th>
 <th align="right">gstat_Inf</th>
-<th align="right">gstat_2</th>
 <th align="right">gwr_idw_Inf</th>
-<th align="right">gwr_gauss</th>
+<th align="right">gwr_idw_Inf_old</th>
+<th align="right">gstat_2</th>
 <th align="right">gwr_idw_2</th>
+<th align="right">gwr_gauss</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="right">39.80</td>
 <td align="right">48.57</td>
-<td align="right">49.06</td>
+<td align="right">48.68</td>
 <td align="right">53.82</td>
+<td align="right">49.06</td>
 <td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">55.03</td>
 </tr>
 <tr class="even">
 <td align="right">43.26</td>
 <td align="right">45.30</td>
-<td align="right">45.85</td>
+<td align="right">45.42</td>
 <td align="right">49.27</td>
+<td align="right">45.85</td>
 <td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">48.77</td>
 </tr>
 <tr class="odd">
 <td align="right">29.91</td>
 <td align="right">37.56</td>
-<td align="right">38.20</td>
+<td align="right">38.56</td>
 <td align="right">40.07</td>
+<td align="right">38.20</td>
 <td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">45.08</td>
 </tr>
 <tr class="even">
 <td align="right">29.23</td>
 <td align="right">27.12</td>
-<td align="right">24.98</td>
+<td align="right">27.49</td>
 <td align="right">21.88</td>
+<td align="right">24.98</td>
 <td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">21.32</td>
 </tr>
 <tr class="odd">
 <td align="right">36.71</td>
 <td align="right">40.63</td>
-<td align="right">41.55</td>
+<td align="right">40.12</td>
 <td align="right">36.02</td>
+<td align="right">41.55</td>
 <td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">33.50</td>
 </tr>
 <tr class="even">
 <td align="right">32.62</td>
 <td align="right">35.94</td>
-<td align="right">36.52</td>
+<td align="right">36.50</td>
 <td align="right">33.61</td>
+<td align="right">36.52</td>
 <td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">31.38</td>
 </tr>
 <tr class="odd">
 <td align="right">31.31</td>
 <td align="right">33.25</td>
-<td align="right">32.41</td>
+<td align="right">34.15</td>
 <td align="right">32.87</td>
+<td align="right">32.41</td>
 <td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">30.97</td>
 </tr>
 <tr class="even">
 <td align="right">31.77</td>
 <td align="right">34.44</td>
-<td align="right">34.99</td>
+<td align="right">34.30</td>
 <td align="right">25.72</td>
+<td align="right">34.99</td>
 <td align="right">22.54</td>
-<td align="right">NA</td>
+<td align="right">23.80</td>
 </tr>
 <tr class="odd">
 <td align="right">32.05</td>
 <td align="right">40.25</td>
-<td align="right">41.83</td>
+<td align="right">40.33</td>
 <td align="right">39.53</td>
+<td align="right">41.83</td>
 <td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">36.60</td>
 </tr>
 <tr class="even">
 <td align="right">49.28</td>
 <td align="right">48.16</td>
-<td align="right">48.44</td>
+<td align="right">48.64</td>
 <td align="right">49.16</td>
-<td align="right">50.01</td>
-<td align="right">49</td>
+<td align="right">48.44</td>
+<td align="right">49.87</td>
+<td align="right">51.34</td>
 </tr>
 </tbody>
 </table>
+
+Compute max-min distance
+------------------------
 
     D <- spDists(coordinates(columbus_sp[test_ids,]),
                  coordinates(columbus_sp[test_ids,]))
