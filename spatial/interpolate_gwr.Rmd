@@ -53,11 +53,8 @@ col_test <- columbus[test_ids,]
 ```{r}
 ## kernels
 gwr_iwd <-  function (dist2, d)    {
-  w <- ifelse(dist2 > d, 0, 1/dist2)
-  w
-}
-gwr_iwd_old <-  function (dist2, d)    {
-  w <- ifelse(dist2 > d, 0, 1/dist2^2)
+  d2 <- d^2
+  w <- ifelse(dist2 > d2, 0, 1/dist2)
   w
 }
 ```
@@ -70,38 +67,59 @@ gwr_iwd_old <-  function (dist2, d)    {
 ```{r}
 ### Regressions
 gwr_gauss <- gwr(CRIME ~ 1, data=col_train,
-           fit.points = col_XY[test_ids,],
-           coords=col_XY[-test_ids,], bandwidth=2,
-           gweight=gwr.bisquare)
+                 fit.points = col_XY[test_ids,],
+                 coords=col_XY[-test_ids,], bandwidth=2,
+                 gweight=gwr.bisquare)
 gwr_gauss$SDF$"(Intercept)"
 
 gwr_gauss$SDF$"(Intercept)"
 
 
 gwr_idw_2 <- gwr(CRIME ~ 1, data=col_train,
-                fit.points = col_XY[test_ids,],
-                coords=col_XY[-test_ids,], bandwidth=2,
-                gweight=gwr_iwd)
-
-gwr_idw_Inf <- gwr(CRIME ~ 1, data=col_train,
                  fit.points = col_XY[test_ids,],
-                 coords=col_XY[-test_ids,], bandwidth=Inf,
+                 coords=col_XY[-test_ids,], bandwidth=2,
                  gweight=gwr_iwd)
 
-gwr_idw_Inf_old <- gwr(CRIME ~ 1, data=col_train,
-                 fit.points = col_XY[test_ids,],
-                 coords=col_XY[-test_ids,], bandwidth=Inf,
-                 gweight=gwr_iwd_old)
+gwr_idw_Inf <- gwr(CRIME ~ 1, data=col_train,
+                   fit.points = col_XY[test_ids,],
+                   coords=col_XY[-test_ids,], bandwidth=Inf,
+                   gweight=gwr_iwd)
+
 gwr_idw_2$SDF$"(Intercept)"
 ```
+### knn-style with gwr
+
+For a knn, we play with the argument `adapt`. Threoteically, setting 2/39 should give us a 2knn, but it seems it give just above, so I set 2/39-0.001. Here I try knn wihtout idw weighting:
+
+```{r}
+gwr_knn <-  function (dist2, d)    {
+  d2 <- d^2
+  w <- ifelse(dist2 > d2, 0, 1)
+  w
+}
+```
+
+```{r}
+gwr_knn2 <- gwr(CRIME ~ 1, data=col_train,
+                fit.points = col_XY[test_ids,], adapt= 2/39-0.00001,
+                coords=col_XY[-test_ids,], bandwidth=Inf,
+                gweight=gwr_knn)
+as.data.frame(gwr_knn2$SDF)
+```
+
+
 
 ### gstat ones:
 
 ```{r}
 gstat_2_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
-              maxdist = 2, set = list(idp = 2)) 
+                     maxdist = 2, set = list(idp = 2)) 
 gstat_2 <- as.data.frame(predict(gstat_2_mod, columbus_sp[test_ids,]))
   
+gstat_knn2_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
+                        nmax = 2, set = list(idp = 0)) 
+gstat_knn2 <- as.data.frame(predict(gstat_knn2_mod, columbus_sp[test_ids,]))
+
 
 gstat_Inf_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
                  maxdist = Inf, set = list(idp = 2)) 
@@ -116,19 +134,53 @@ idw_Inf <- idw0(CRIME ~ 1, data=columbus[-test_ids,], newdata=columbus[test_ids,
 table <- data.frame(idw_Inf = as.numeric(idw_Inf),
                     gstat_Inf = gstat_Inf$CRIME.pred,
                     gwr_idw_Inf = gwr_idw_Inf$SDF$"(Intercept)",
-                    gwr_idw_Inf_old = gwr_idw_Inf_old$SDF$"(Intercept)",
+                    # gwr_idw_Inf_old = gwr_idw_Inf_old$SDF$"(Intercept)",
                     gstat_2 = gstat_2$CRIME.pred,
                     gwr_idw_2 = gwr_idw_2$SDF$"(Intercept)",
-                    gwr_gauss = gwr_gauss$SDF$"(Intercept)")
+                    gwr_gauss = gwr_gauss$SDF$"(Intercept)",
+                    gstat_knn2 = gstat_knn2$CRIME.pred,
+                    gwr_knn2 = gwr_knn2$SDF$"(Intercept)")
 kable(table, digits=2)
 ```
 
 ## Compute max-min distance
 
+Not sure if that data is long-dat or not?
+
 ```{r}
 D <- spDists(coordinates(columbus_sp[test_ids,]),
-             coordinates(columbus_sp[test_ids,]))
-diag(D) <- NA
-apply(D, 1, min, na.rm=TRUE)
-max(apply(D, 1, min, na.rm=TRUE))
+             coordinates(columbus_sp[-test_ids,]))
+
+D2 <- spDists(coordinates(columbus_sp[test_ids,]),
+              coordinates(columbus_sp[-test_ids,]), longlat=TRUE)
+## min distance from train point to each new/test point
+D_min_each <- apply(D, 1, min, na.rm=TRUE)
+D2_min_each <- apply(D2, 1, min, na.rm=TRUE)
+sort(D_min_each)
+sort(D2_min_each)
 ```
+
+#### Max of the min distance
+```{r}
+max(D_min_each)
+```
+
+#### compute sum of weights, and how many weights not zero
+
+```{r}
+apply(D, 1, function(x) sum(gwr_iwd(x^2, 2)))
+apply(D, 1, function(x) sum(gwr_iwd(x^2, 2)>0))
+```
+
+#### Find out the distance used in grw:
+
+If we get use knn-1 and return as weight the (non-inverse) distance, we should find out which distances are used in grw:
+
+```{r}
+as.data.frame(gwr(CRIME ~ 1, data=col_train,
+    fit.points = col_XY[test_ids,],
+    coords=col_XY[-test_ids,], adapt=1/39-0.000001,
+    gweight=function(dist2, d) ifelse(dist2>d^2, 0, sqrt(dist2)))$SDF)
+
+```
+
