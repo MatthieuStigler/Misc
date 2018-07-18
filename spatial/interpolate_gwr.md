@@ -84,21 +84,21 @@ Gwr and idw interpolation
     ### Regressions
     gwr_gauss <- gwr(CRIME ~ 1, data=col_train,
                fit.points = col_XY[test_ids,],
-               coords=col_XY[-test_ids,], bandwidth=2^2,
+               coords=col_XY[-test_ids,], bandwidth=2,
                gweight=gwr.bisquare)
     gwr_gauss$SDF$"(Intercept)"
 
-    ##  [1] 55.02620 48.77090 45.08100 21.31681 33.50161 31.38315 30.96545
-    ##  [8] 23.80405 36.59767 51.33628
+    ##  [1]       NA       NA       NA       NA       NA       NA       NA
+    ##  [8] 22.54149       NA 50.01349
 
     gwr_gauss$SDF$"(Intercept)"
 
-    ##  [1] 55.02620 48.77090 45.08100 21.31681 33.50161 31.38315 30.96545
-    ##  [8] 23.80405 36.59767 51.33628
+    ##  [1]       NA       NA       NA       NA       NA       NA       NA
+    ##  [8] 22.54149       NA 50.01349
 
     gwr_idw_2 <- gwr(CRIME ~ 1, data=col_train,
                     fit.points = col_XY[test_ids,],
-                    coords=col_XY[-test_ids,], bandwidth=2^2,
+                    coords=col_XY[-test_ids,], bandwidth=2,
                     gweight=gwr_iwd)
 
     gwr_idw_Inf <- gwr(CRIME ~ 1, data=col_train,
@@ -113,7 +113,7 @@ Gwr and idw interpolation
     gwr_idw_2$SDF$"(Intercept)"
 
     ##  [1]       NA       NA       NA       NA       NA       NA       NA
-    ##  [8] 22.54149       NA 49.86750
+    ##  [8]       NA       NA 49.74751
 
 ### gstat ones:
 
@@ -163,7 +163,7 @@ Compare results
 <td align="right">53.82</td>
 <td align="right">49.06</td>
 <td align="right">NA</td>
-<td align="right">55.03</td>
+<td align="right">NA</td>
 </tr>
 <tr class="even">
 <td align="right">43.26</td>
@@ -172,7 +172,7 @@ Compare results
 <td align="right">49.27</td>
 <td align="right">45.85</td>
 <td align="right">NA</td>
-<td align="right">48.77</td>
+<td align="right">NA</td>
 </tr>
 <tr class="odd">
 <td align="right">29.91</td>
@@ -181,7 +181,7 @@ Compare results
 <td align="right">40.07</td>
 <td align="right">38.20</td>
 <td align="right">NA</td>
-<td align="right">45.08</td>
+<td align="right">NA</td>
 </tr>
 <tr class="even">
 <td align="right">29.23</td>
@@ -190,7 +190,7 @@ Compare results
 <td align="right">21.88</td>
 <td align="right">24.98</td>
 <td align="right">NA</td>
-<td align="right">21.32</td>
+<td align="right">NA</td>
 </tr>
 <tr class="odd">
 <td align="right">36.71</td>
@@ -199,7 +199,7 @@ Compare results
 <td align="right">36.02</td>
 <td align="right">41.55</td>
 <td align="right">NA</td>
-<td align="right">33.50</td>
+<td align="right">NA</td>
 </tr>
 <tr class="even">
 <td align="right">32.62</td>
@@ -208,7 +208,7 @@ Compare results
 <td align="right">33.61</td>
 <td align="right">36.52</td>
 <td align="right">NA</td>
-<td align="right">31.38</td>
+<td align="right">NA</td>
 </tr>
 <tr class="odd">
 <td align="right">31.31</td>
@@ -217,7 +217,7 @@ Compare results
 <td align="right">32.87</td>
 <td align="right">32.41</td>
 <td align="right">NA</td>
-<td align="right">30.97</td>
+<td align="right">NA</td>
 </tr>
 <tr class="even">
 <td align="right">31.77</td>
@@ -225,8 +225,8 @@ Compare results
 <td align="right">34.30</td>
 <td align="right">25.72</td>
 <td align="right">34.99</td>
+<td align="right">NA</td>
 <td align="right">22.54</td>
-<td align="right">23.80</td>
 </tr>
 <tr class="odd">
 <td align="right">32.05</td>
@@ -235,7 +235,7 @@ Compare results
 <td align="right">39.53</td>
 <td align="right">41.83</td>
 <td align="right">NA</td>
-<td align="right">36.60</td>
+<td align="right">NA</td>
 </tr>
 <tr class="even">
 <td align="right">49.28</td>
@@ -243,8 +243,8 @@ Compare results
 <td align="right">48.64</td>
 <td align="right">49.16</td>
 <td align="right">48.44</td>
-<td align="right">49.87</td>
-<td align="right">51.34</td>
+<td align="right">49.75</td>
+<td align="right">50.01</td>
 </tr>
 </tbody>
 </table>

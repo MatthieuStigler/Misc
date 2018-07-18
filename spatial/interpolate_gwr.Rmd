@@ -71,7 +71,7 @@ gwr_iwd_old <-  function (dist2, d)    {
 ### Regressions
 gwr_gauss <- gwr(CRIME ~ 1, data=col_train,
            fit.points = col_XY[test_ids,],
-           coords=col_XY[-test_ids,], bandwidth=2^2,
+           coords=col_XY[-test_ids,], bandwidth=2,
            gweight=gwr.bisquare)
 gwr_gauss$SDF$"(Intercept)"
 
@@ -80,7 +80,7 @@ gwr_gauss$SDF$"(Intercept)"
 
 gwr_idw_2 <- gwr(CRIME ~ 1, data=col_train,
                 fit.points = col_XY[test_ids,],
-                coords=col_XY[-test_ids,], bandwidth=2^2,
+                coords=col_XY[-test_ids,], bandwidth=2,
                 gweight=gwr_iwd)
 
 gwr_idw_Inf <- gwr(CRIME ~ 1, data=col_train,
