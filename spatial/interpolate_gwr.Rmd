@@ -26,20 +26,22 @@ Three points that are unclear so far:
 Use Columbus data, split at random for a train and test sub-samples. 
 
 ```{r cars, message=FALSE}
-# library(tidyverse)
+library(tidyverse)
 library(spgwr)
 library(gstat)
 library(rgdal)
 library(knitr)
 
-columbus_sp <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
+# columbus_sp <- readOGR(system.file("shapes/columbus.shp", package="spData")[1])
 data(columbus, package="spData")
 
+columbus_sp <- columbus
+coordinates(columbus_sp) <- columbus[,c("X", "Y")]
 
 set.seed(123)
 test_ids <- sample(1:nrow(columbus), size=10)
 
-col_XY <- as.matrix(columbus[,c("X", "Y")])
+col_XY <- coordinates(columbus_sp)
 
 col_sp_train <- columbus_sp[-test_ids,]
 col_sp_test <- columbus_sp[test_ids,]
@@ -47,6 +49,8 @@ col_sp_test <- columbus_sp[test_ids,]
 col_train <- columbus[-test_ids,]
 col_test <- columbus[test_ids,]
 ```
+
+
 
 ## Define the idw kernel for gwr
 
@@ -77,7 +81,7 @@ gwr_gauss$SDF$"(Intercept)"
 
 gwr_idw_2 <- gwr(CRIME ~ 1, data=col_train,
                  fit.points = col_XY[test_ids,],
-                 coords=col_XY[-test_ids,], bandwidth=2,
+                 coords=col_XY[-test_ids,], bandwidth=4,
                  gweight=gwr_iwd)
 
 gwr_idw_Inf <- gwr(CRIME ~ 1, data=col_train,
@@ -101,7 +105,7 @@ gwr_knn <-  function (dist2, d)    {
 
 ```{r}
 gwr_knn2 <- gwr(CRIME ~ 1, data=col_train,
-                fit.points = col_XY[test_ids,], adapt= 2/39-0.00001,
+                fit.points = col_XY[test_ids,], adapt= 2/39,
                 coords=col_XY[-test_ids,], bandwidth=Inf,
                 gweight=gwr_knn)
 as.data.frame(gwr_knn2$SDF)
@@ -113,7 +117,7 @@ as.data.frame(gwr_knn2$SDF)
 
 ```{r}
 gstat_2_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
-                     maxdist = 2, set = list(idp = 2)) 
+                     maxdist = 4, set = list(idp = 2)) 
 gstat_2 <- as.data.frame(predict(gstat_2_mod, columbus_sp[test_ids,]))
   
 gstat_knn2_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-test_ids,], 
@@ -125,7 +129,9 @@ gstat_Inf_mod <- gstat(id = "CRIME", formula = CRIME ~ 1, data = columbus_sp[-te
                  maxdist = Inf, set = list(idp = 2)) 
 gstat_Inf <- as.data.frame(predict(gstat_Inf_mod, columbus_sp[test_ids,]))
 
-idw_Inf <- idw0(CRIME ~ 1, data=columbus[-test_ids,], newdata=columbus[test_ids,]) # ,y=columbus[-test_ids,"CRIME"]
+
+##
+idw_Inf <- idw0(CRIME ~ 1, data=columbus_sp[-test_ids,], newdata=columbus_sp[test_ids,])
 ```
 
 ## Compare results
@@ -135,29 +141,45 @@ table <- data.frame(idw_Inf = as.numeric(idw_Inf),
                     gstat_Inf = gstat_Inf$CRIME.pred,
                     gwr_idw_Inf = gwr_idw_Inf$SDF$"(Intercept)",
                     # gwr_idw_Inf_old = gwr_idw_Inf_old$SDF$"(Intercept)",
-                    gstat_2 = gstat_2$CRIME.pred,
-                    gwr_idw_2 = gwr_idw_2$SDF$"(Intercept)",
-                    gwr_gauss = gwr_gauss$SDF$"(Intercept)",
+                    gstat_bw = gstat_2$CRIME.pred,
+                    gwr_idw_bw = gwr_idw_2$SDF$"(Intercept)",
+                    # gwr_gauss = gwr_gauss$SDF$"(Intercept)",
                     gstat_knn2 = gstat_knn2$CRIME.pred,
                     gwr_knn2 = gwr_knn2$SDF$"(Intercept)")
 kable(table, digits=2)
 ```
 
-## Compute max-min distance
-
-Not sure if that data is long-dat or not?
+Summary of diffs:
 
 ```{r}
-D <- spDists(coordinates(columbus_sp[test_ids,]),
-             coordinates(columbus_sp[-test_ids,]))
+diff_sumry <- table %>%
+  select(-idw_Inf) %>%
+  mutate(n_row = 1:n()) %>%
+  gather(variable, value, -n_row) %>%
+  mutate(type= str_extract(variable, "gstat|gwr"),
+         spec = str_extract(variable, "bw|Inf|knn")) %>%
+  select(-variable) %>%
+  spread(type, value) %>%
+  mutate(diff = gstat-gwr) %>%
+  group_by(spec) %>%
+  summarise_at("diff", funs(min, max, mean))
+kable(diff_sumry)
+```
 
-D2 <- spDists(coordinates(columbus_sp[test_ids,]),
-              coordinates(columbus_sp[-test_ids,]), longlat=TRUE)
+
+## Compute max-min distance
+
+
+
+```{r}
+D <- spDists(col_XY[test_ids,],
+             col_XY[-test_ids,])
+
+D <- spDists(columbus_sp[test_ids,],
+             columbus_sp[-test_ids,])
 ## min distance from train point to each new/test point
 D_min_each <- apply(D, 1, min, na.rm=TRUE)
-D2_min_each <- apply(D2, 1, min, na.rm=TRUE)
 sort(D_min_each)
-sort(D2_min_each)
 ```
 
 #### Max of the min distance
