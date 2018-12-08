@@ -1,0 +1,177 @@
+---
+title: "Spatial custering with ClustGeo"
+author: "Matthieu"
+date: "December 6, 2018"
+output:
+  md_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = FALSE}
+library(raster)
+library(tidyverse)
+library(ClustGeo)
+library(cowplot)
+```
+
+
+## Intro
+
+I want to identify parts in a field with lower yields, and want these parts to be contiguous. In spatial word, I am trying to do a 1D clustering, taking into account the spatial distribution of the data. I use here  R package `ClustGeo` provides function `hclustgeo()` that does a mixing of data and spatial distance doing *Ward-like hierarchical clustering algorithm including soft contiguity constraints.*
+
+`ClustGeo` has a parameter $\alpha$, that indicates how much we want to emphasize *data-clustering*  versus *spatial-clustering* 
+
+* $\alpha = 0$: only data clustering
+* $\alpha > 0$ also give weight to saptial-clustering
+
+Here, I give an example with a field with **random values** (zero spatial correlation). Under random (non-spatial) sampling I expect:
+
+* data: with increasing $\alpha$, means of cluster should become less and less different
+* spatial: with increasing $\alpha$, cluster should get closer to...  a square probably (that's the form with the lowest average difference, correct?) 
+
+
+
+## Functions: prep data, compute clustering for various alpha
+
+### Pseudo data
+
+
+
+```{r pressure}
+r <- raster(nrows = 9, ncols = 9, xmn=-1, xmx=1, ymn=-1, ymx=1)
+r[] <-  sample(1:81, size = 81, replace = FALSE)
+plot(r)
+```
+
+Convert to simple data
+
+```{r}
+ras_dat <- as.data.frame(r, xy = TRUE) %>%  as_tibble %>% 
+  mutate(n_cell = 1:ncell(r)) %>% 
+  select(n_cell, everything()) %>% 
+  rename(value = layer)
+ras_dat
+```
+
+### Warm-up: some convenience functions
+
+Just make a distance function, and a nicer (data_frame) output for the `hclustgeo()` function. 
+
+```{r}
+dist_rast_euclid <-  function(x)  {
+  x %>% 
+    xyFromCell(cell = 1:ncell(.))  %>% 
+    dist() 
+}
+hclustgeo_df <-  function(D0, D1 = NULL, alpha, n_obs = TRUE, k = 5) {
+  res <- hclustgeo(D0, D1, alpha = alpha) %>% 
+    cutree(k=k) %>% 
+    data_frame(cluster = .)
+  if(n_obs) res <-  res %>% 
+      mutate(n_obs =   1:nrow(.)) %>% 
+      select(n_obs, everything())
+  res
+  
+}
+```
+
+
+
+### Compute distances
+
+```{r}
+dat_dist <- dist(getValues(r$layer))
+geo_dist <-  dist_rast_euclid(r)
+```
+
+
+### Use function on grid of alphas
+
+I use alphas from 0 to 1, by 0.1.
+
+```{r}
+res_alphas <- data_frame(alpha = seq(0, 1, by = 0.1)) %>% 
+  mutate(alpha_name = paste("alpha", alpha, sep="_"),
+         data = map(alpha, ~ hclustgeo_df(dat_dist, geo_dist, alpha = ., k=5)))
+
+res_alphas_l <-  res_alphas %>% 
+  unnest(data) %>% 
+  left_join(ras_dat, by = c("n_obs" = "n_cell")) %>% 
+  mutate_at(c("alpha", "cluster"), as.factor) %>% 
+  group_by(alpha, cluster) %>% 
+  mutate(cluster_mean = mean(value)) %>% 
+  ungroup()
+```
+
+
+
+## Result: Visualisation
+
+```{r}
+res_alphas_l_dat <-  res_alphas_l %>% 
+  filter(alpha %in% c(0, 0.1, 0.5, 0.8, 0.9, 1)) 
+```
+
+### Various plots
+
+```{r}
+## show original
+pl_dat_orig <- res_alphas_l_dat %>% 
+  filter(alpha ==0) %>% 
+  ggplot(aes(x = x, y= y, fill = value)) +
+  geom_tile() +
+  ggtitle("Original data (no spatial corr actually)")
+```
+
+```{r}
+## show clustering in dat space
+pl_clus_datSpace <- res_alphas_l_dat %>% 
+  ggplot(aes(x = value, y= cluster, colour = cluster)) +
+  geom_point() +
+  facet_grid(alpha ~ .) +
+  theme(legend.position = "none") +
+  ggtitle("Cluster, in data space")
+
+pl_clus_datSpace
+
+## show clustering in geo space
+pl_clus_geoSpace <- res_alphas_l_dat %>% 
+  ggplot(aes(x = x, y= y, fill = factor(cluster))) +
+  geom_tile() +
+  facet_grid(alpha ~ .) +
+  theme(legend.position = "none") +
+  ggtitle("Cluster, in geo-space")
+
+pl_clus_geoSpace
+```
+
+
+
+#### Show means
+
+```{r}
+pl_clus_geoSpace_means <- res_alphas_l_dat %>% 
+  ggplot(aes(x = x, y= y, fill = cluster_mean)) +
+  geom_tile() +
+  facet_grid(alpha ~ .) +
+  theme(legend.position = "none") +
+  ggtitle("Cluster, in geo-space, colour according to mean values")
+
+pl_clus_geoSpace_means
+
+```
+
+yes indeed, as I expected, spatially-clustering random points reduces variability between cluster means!
+
+### Final result: compare data- versus spatial-clustering
+
+PLug together in one (pkg `cowplot`):
+
+```{r}
+plot_grid(pl_dat_orig, plot_grid(pl_clus_datSpace, pl_clus_geoSpace), nrow = 2, rel_heights = c(1, 2))
+```
+
