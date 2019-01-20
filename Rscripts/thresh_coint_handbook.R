@@ -62,6 +62,19 @@ as.data.frame.varirf <- function(x, format = c("wide_resp", "long", "wide_type")
   IRF_df
 }
 
+irfplot <- function(x) {
+  irf_1_df_w2 <- as.data.frame(x=x, format = "wide_type") %>% 
+    mutate(impulse  = paste(impulse, "->"),
+           response  = paste("->", response))
+  
+  ggplot(aes(x = n_ahead, y=value_IRF, ymin = value_Lower, ymax = value_Upper), 
+         data= irf_1_df_w2)+
+    facet_grid(impulse ~ response, switch = "y") +
+    geom_smooth(stat="identity") +
+    geom_hline(yintercept =0) +
+    xlab("N ahead") + ylab("")
+}
+
 ## convert a ur.ers test output to data frame
 as.data.frame.ur.ers <- function(x, ...) {
   res <- cbind(type = x@type, 
