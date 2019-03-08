@@ -35,6 +35,10 @@ ahull_to_poly <-  function(x, crs = NA_character_) {
 if(FALSE){
   library(sf)
   library(alphahull)
+  library(devtools)
+  source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/ahull_return_group.R")
+  source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/ahull_to_sf.R")
+  
   
   ## example 2
   n <- 300
