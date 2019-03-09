@@ -1,0 +1,76 @@
+---
+title: "Landsat 9 pixel cloud quality in R"
+author: "Matthieu"
+date: "March 8, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+##
+
+```{r}
+library(devtools)
+source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/lsqa_tools.R")
+```
+
+## Get the attributes for one value
+
+```{r}
+lsqa_pixel_table(322) %>% 
+  spread(attribute, bit_value)
+```
+
+
+## Construct Table 7-4
+
+This would be the list of all pixel values you can find in the data:
+
+```{r}
+pixel_qas <- c(1, 322, 324, 328, 336, 352, 368, 386, 388, 392, 400, 416, 432, 480, 834, 836, 840, 848, 864, 880, 898, 900, 904, 912, 928, 944, 
+992, 1346, 1348, 1350, 1352)
+```
+
+
+Use now `lsqa_pixel_table()` and a few tidying steps:
+
+```{r}
+TAB_7_3 <- tibble(pixel_qa = pixel_qas) %>% 
+  mutate(vals = map(pixel_qa, lsqa_pixel_table)) %>% 
+  unnest(vals) %>% 
+  spread(attribute, bit_value) %>% 
+  mutate(pixel_qa = as.integer(pixel_qa)) %>% 
+  arrange(pixel_qa) %>% 
+  mutate_at(c("Fill", "Clear", "Water", "Cloud_Shadow", "Snow", "Cloud", "Terrain_Occlusion"), as.logical)
+
+```
+
+
+```{r}
+TAB_7_3 %>% 
+  knitr::kable()
+```
+
+
+## So when is it clear?
+
+```{r}
+TAB_7_3 %>% 
+  filter(Clear == TRUE) %>% 
+  select(pixel_qa, Clear, Cloud, Water, Cloud_confidence, Cirrus_Confidence)
+```
+
+```{r}
+TAB_7_3 %>% 
+  filter(Clear == FALSE) %>% 
+  select(pixel_qa, Clear, Cloud, Water, Cloud_confidence, Cirrus_Confidence)
+
+```
+
+
+
+ 

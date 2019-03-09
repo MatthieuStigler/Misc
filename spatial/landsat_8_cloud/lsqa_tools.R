@@ -50,11 +50,11 @@ lsqa_pixel_table <- function(x, raw = FALSE) {
            #               "Cloud_Confidence_None", "Cloud_Confidence_Low")
     ) %>% 
     dplyr::select(bit_position, attribute, bit_value) 
-  if(raw) res <- res %>% 
+  if(!raw) res <- res %>% 
       mutate(attribute = str_remove(attribute, "_[0-9]$"),
              attribute = factor(attribute, levels = unique(attribute))) %>% 
       group_by(attribute) %>% 
-      summarise(bit_value = classif(bit_value)) %>% 
+      summarise(bit_value = lsqa_classif(bit_value)) %>% 
       ungroup()
   res
 }
