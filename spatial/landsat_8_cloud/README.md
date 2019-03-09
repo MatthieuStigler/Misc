@@ -3,7 +3,12 @@ Objective
 
 This R script help *decode* the Landsat 8 `pixel_qa` band, and to recover the associated attributes.
 
-The Landsat 8 user manual [LANDSAT 8 SURFACE REFLECTANCE CODE (LASRC) PRODUCT GUIDE](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwisnNbE5vPgAhVMvJ4KHUZwC0MQFjAAegQIChAC&url=https%3A%2F%2Flandsat.usgs.gov%2Fdocuments%2Flasrc_product_guide.pdf&usg=AOvVaw1k4ElRQCyGumQtZzeTT51P) is quite confusing, didn't find much helpful information there.
+The Landsat 8 surface reflectance (SR) user manual [LANDSAT 8 SURFACE REFLECTANCE CODE (LASRC) PRODUCT GUIDE](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwisnNbE5vPgAhVMvJ4KHUZwC0MQFjAAegQIChAC&url=https%3A%2F%2Flandsat.usgs.gov%2Fdocuments%2Flasrc_product_guide.pdf&usg=AOvVaw1k4ElRQCyGumQtZzeTT51P) is quite confusing, didn't find much helpful information there. Also, Landsat 8 stuff provides numerical tables only in... pdf format (confirmed by email to their helpline).
+
+What I provide here:
+
+-   the function `lsqa_pixel_table()`, to extract cloud attributes from a Landsat 8 SR `pixel_qa` value
+-   two saved datasets in csv format, corresponding to [Table 7-3](https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/LS_8_pixel_qa_Table_7_3.csv) and [Table 7-4](https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/LS_8_pixel_qa_Table_7_4.csv) in the manual
 
 Usage: R script
 ===============
@@ -52,10 +57,9 @@ TAB_7_3 <- tibble(pixel_qa = pixel_qas) %>%
   mutate_at(c("Fill", "Clear", "Water", "Cloud_Shadow", "Snow", "Cloud", "Terrain_Occlusion"), as.logical)
 ```
 
-``` r
-TAB_7_3 %>% 
-  knitr::kable()
-```
+You could also get this table by downloading it directly:
+
+Results looks like:
 
 |  pixel\_qa| Fill  | Clear | Water | Cloud\_Shadow | Snow  | Cloud | Cloud\_confidence | Cirrus\_Confidence | Terrain\_Occlusion |
 |----------:|:------|:------|:------|:--------------|:------|:------|:------------------|:-------------------|:-------------------|
@@ -91,10 +95,10 @@ TAB_7_3 %>%
 |       1350| FALSE | TRUE  | TRUE  | FALSE         | FALSE | FALSE | Low               | Low                | TRUE               |
 |       1352| FALSE | FALSE | FALSE | TRUE          | FALSE | FALSE | Low               | Low                | TRUE               |
 
-So when is it clear?
---------------------
+So when is it `Clear`?
+----------------------
 
-It looks like to be declared `clear` you need:
+Trying to understand how they classify their data... It looks like to be declared `Clear==TRUE` you need:
 
 1.  No Snow/Water (well actually yes: Water, but only if occluded?)
 2.  No Cloud\_shadow or Cloud
@@ -116,6 +120,8 @@ TAB_7_3 %>%
     ## 4      898 TRUE  FALSE FALSE Medium           High             
     ## 5     1346 TRUE  FALSE FALSE Low              Low              
     ## 6     1350 TRUE  FALSE TRUE  Low              Low
+
+Check cases when `Clear==FALSE`?
 
 ``` r
 TAB_7_3 %>% 

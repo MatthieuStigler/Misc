@@ -15,7 +15,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This R script help *decode* the Landsat 8 `pixel_qa` band, and to recover the associated attributes. 
 
-The Landsat 8 user manual [LANDSAT 8 SURFACE REFLECTANCE CODE (LASRC) PRODUCT GUIDE](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwisnNbE5vPgAhVMvJ4KHUZwC0MQFjAAegQIChAC&url=https%3A%2F%2Flandsat.usgs.gov%2Fdocuments%2Flasrc_product_guide.pdf&usg=AOvVaw1k4ElRQCyGumQtZzeTT51P) is quite confusing, didn't find much helpful information there. 
+The Landsat 8 surface reflectance (SR) user manual [LANDSAT 8 SURFACE REFLECTANCE CODE (LASRC) PRODUCT GUIDE](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwisnNbE5vPgAhVMvJ4KHUZwC0MQFjAAegQIChAC&url=https%3A%2F%2Flandsat.usgs.gov%2Fdocuments%2Flasrc_product_guide.pdf&usg=AOvVaw1k4ElRQCyGumQtZzeTT51P) is quite confusing, didn't find much helpful information there. Also, Landsat 8 stuff provides numerical tables only in... pdf format (confirmed by email to their helpline).
+
+What I provide here:
+
+* the function `lsqa_pixel_table()`, to extract cloud attributes from a Landsat 8 SR `pixel_qa` value
+* two saved datasets in csv format, corresponding to [Table 7-3](https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/LS_8_pixel_qa_Table_7_3.csv) and [Table 7-4](https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/LS_8_pixel_qa_Table_7_4.csv) in the manual
 
 # Usage: R script
 
@@ -57,16 +62,23 @@ TAB_7_3 <- tibble(pixel_qa = pixel_qas) %>%
 
 ```
 
+You could also get this table by downloading it directly:
 
-```{r}
+```{r, include= FALSE}
+read_csv("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/LS_8_pixel_qa_Table_7_4.csv")
+```
+
+Results looks like: 
+
+```{r, echo = FALSE}
 TAB_7_3 %>% 
   knitr::kable()
 ```
 
 
-## So when is it clear?
+## So when is it `Clear`?
 
-It looks like to be declared `clear` you need:
+Trying to understand how they classify their data... It looks like to be declared `Clear==TRUE` you need:
 
 1. No Snow/Water (well actually yes: Water, but only if occluded?)
 2. No Cloud_shadow or Cloud
@@ -78,6 +90,8 @@ TAB_7_3 %>%
   filter(Clear == TRUE) %>% 
   select(pixel_qa, Clear, Cloud, Water, Cloud_confidence, Cirrus_Confidence)
 ```
+
+Check cases when  `Clear==FALSE`?
 
 ```{r}
 TAB_7_3 %>% 
