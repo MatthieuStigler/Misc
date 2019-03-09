@@ -11,16 +11,22 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Objective
 
-##
+This R script help *decode* the Landsat 8 `pixel_qa` band, and to recover the associated attributes. 
 
-```{r}
+The Landsat 8 user manual [LANDSAT 8 SURFACE REFLECTANCE CODE (LASRC) PRODUCT GUIDE](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwisnNbE5vPgAhVMvJ4KHUZwC0MQFjAAegQIChAC&url=https%3A%2F%2Flandsat.usgs.gov%2Fdocuments%2Flasrc_product_guide.pdf&usg=AOvVaw1k4ElRQCyGumQtZzeTT51P) is quite confusing, didn't find much helpful information there. 
+
+# Usage: R script
+
+Load the script hosted on github:
+
+```{r, message = FALSE}
 library(devtools)
 source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/lsqa_tools.R")
 ```
 
-## Get the attributes for one value
+## Get the attributes for one pixel value, say 322
 
 ```{r}
 lsqa_pixel_table(322) %>% 
@@ -60,6 +66,13 @@ TAB_7_3 %>%
 
 ## So when is it clear?
 
+It looks like to be declared `clear` you need:
+
+1. No Snow/Water (well actually yes: Water, but only if occluded?)
+2. No Cloud_shadow or Cloud
+
+You can have high cirrus, but not high Cloud?
+
 ```{r}
 TAB_7_3 %>% 
   filter(Clear == TRUE) %>% 
@@ -68,8 +81,7 @@ TAB_7_3 %>%
 
 ```{r}
 TAB_7_3 %>% 
-  filter(Clear == FALSE) %>% 
-  select(pixel_qa, Clear, Cloud, Water, Cloud_confidence, Cirrus_Confidence)
+  filter(Clear == FALSE) 
 
 ```
 

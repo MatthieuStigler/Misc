@@ -1,28 +1,22 @@
-R Markdown
-----------
+Objective
+=========
+
+This R script help *decode* the Landsat 8 `pixel_qa` band, and to recover the associated attributes.
+
+The Landsat 8 user manual [LANDSAT 8 SURFACE REFLECTANCE CODE (LASRC) PRODUCT GUIDE](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwisnNbE5vPgAhVMvJ4KHUZwC0MQFjAAegQIChAC&url=https%3A%2F%2Flandsat.usgs.gov%2Fdocuments%2Flasrc_product_guide.pdf&usg=AOvVaw1k4ElRQCyGumQtZzeTT51P) is quite confusing, didn't find much helpful information there.
+
+Usage: R script
+===============
+
+Load the script hosted on github:
 
 ``` r
 library(devtools)
 source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/lsqa_tools.R")
 ```
 
-    ## SHA-1 hash of file is 2d14d2275fe58360007b717d95d51f5552090755
-
-    ## Loading required package: tidyverse
-
-    ## ── Attaching packages ─────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──
-
-    ## ✔ ggplot2 3.1.0       ✔ purrr   0.3.0  
-    ## ✔ tibble  2.0.1       ✔ dplyr   0.8.0.1
-    ## ✔ tidyr   0.8.3       ✔ stringr 1.4.0  
-    ## ✔ readr   1.3.1       ✔ forcats 0.4.0
-
-    ## ── Conflicts ────────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
-    ## ✖ dplyr::filter() masks stats::filter()
-    ## ✖ dplyr::lag()    masks stats::lag()
-
-Get the attributes for one value
---------------------------------
+Get the attributes for one pixel value, say 322
+-----------------------------------------------
 
 ``` r
 lsqa_pixel_table(322) %>% 
@@ -100,6 +94,13 @@ TAB_7_3 %>%
 So when is it clear?
 --------------------
 
+It looks like to be declared `clear` you need:
+
+1.  No Snow/Water (well actually yes: Water, but only if occluded?)
+2.  No Cloud\_shadow or Cloud
+
+You can have high cirrus, but not high Cloud?
+
 ``` r
 TAB_7_3 %>% 
   filter(Clear == TRUE) %>% 
@@ -118,21 +119,21 @@ TAB_7_3 %>%
 
 ``` r
 TAB_7_3 %>% 
-  filter(Clear == FALSE) %>% 
-  select(pixel_qa, Clear, Cloud, Water, Cloud_confidence, Cirrus_Confidence)
+  filter(Clear == FALSE) 
 ```
 
-    ## # A tibble: 25 x 6
-    ##    pixel_qa Clear Cloud Water Cloud_confidence Cirrus_Confidence
-    ##       <int> <lgl> <lgl> <lgl> <chr>            <chr>            
-    ##  1        1 FALSE FALSE FALSE None             None             
-    ##  2      324 FALSE FALSE TRUE  Low              Low              
-    ##  3      328 FALSE FALSE FALSE Low              Low              
-    ##  4      336 FALSE FALSE FALSE Low              Low              
-    ##  5      352 FALSE TRUE  FALSE Low              Low              
-    ##  6      368 FALSE TRUE  FALSE Low              Low              
-    ##  7      388 FALSE FALSE TRUE  Medium           Low              
-    ##  8      392 FALSE FALSE FALSE Medium           Low              
-    ##  9      400 FALSE FALSE FALSE Medium           Low              
-    ## 10      416 FALSE TRUE  FALSE Medium           Low              
-    ## # … with 15 more rows
+    ## # A tibble: 25 x 10
+    ##    pixel_qa Fill  Clear Water Cloud_Shadow Snow  Cloud Cloud_confidence
+    ##       <int> <lgl> <lgl> <lgl> <lgl>        <lgl> <lgl> <chr>           
+    ##  1        1 TRUE  FALSE FALSE FALSE        FALSE FALSE None            
+    ##  2      324 FALSE FALSE TRUE  FALSE        FALSE FALSE Low             
+    ##  3      328 FALSE FALSE FALSE TRUE         FALSE FALSE Low             
+    ##  4      336 FALSE FALSE FALSE FALSE        TRUE  FALSE Low             
+    ##  5      352 FALSE FALSE FALSE FALSE        FALSE TRUE  Low             
+    ##  6      368 FALSE FALSE FALSE FALSE        TRUE  TRUE  Low             
+    ##  7      388 FALSE FALSE TRUE  FALSE        FALSE FALSE Medium          
+    ##  8      392 FALSE FALSE FALSE TRUE         FALSE FALSE Medium          
+    ##  9      400 FALSE FALSE FALSE FALSE        TRUE  FALSE Medium          
+    ## 10      416 FALSE FALSE FALSE FALSE        FALSE TRUE  Medium          
+    ## # … with 15 more rows, and 2 more variables: Cirrus_Confidence <chr>,
+    ## #   Terrain_Occlusion <lgl>
