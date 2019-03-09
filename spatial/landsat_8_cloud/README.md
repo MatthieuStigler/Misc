@@ -65,6 +65,10 @@ TAB_7_3 <- tibble(pixel_qa = pixel_qas) %>%
 
 You could also get this table by downloading it directly:
 
+``` r
+read_csv("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/landsat_8_cloud/LS_8_pixel_qa_Table_7_4.csv")
+```
+
 Results looks like:
 
 |  pixel\_qa| Fill  | Clear | Water | Cloud\_Shadow | Snow  | Cloud | Cloud\_confidence | Cirrus\_Confidence | Terrain\_Occlusion |
