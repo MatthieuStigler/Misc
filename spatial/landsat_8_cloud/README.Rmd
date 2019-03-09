@@ -2,7 +2,9 @@
 title: "Landsat 9 pixel cloud quality in R"
 author: "Matthieu"
 date: "March 8, 2019"
-output: html_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 ```{r setup, include=FALSE}
