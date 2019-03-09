@@ -5,6 +5,12 @@ This R script help *decode* the Landsat 8 `pixel_qa` band, and to recover the as
 
 The Landsat 8 surface reflectance (SR) user manual [LANDSAT 8 SURFACE REFLECTANCE CODE (LASRC) PRODUCT GUIDE](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=2ahUKEwisnNbE5vPgAhVMvJ4KHUZwC0MQFjAAegQIChAC&url=https%3A%2F%2Flandsat.usgs.gov%2Fdocuments%2Flasrc_product_guide.pdf&usg=AOvVaw1k4ElRQCyGumQtZzeTT51P) is quite confusing, didn't find much helpful information there. Also, Landsat 8 stuff provides numerical tables only in... pdf format (confirmed by email to their helpline).
 
+Some useful links were:
+
+-   [GIS Stackexchange: MOD09A1 QC layer](https://gis.stackexchange.com/questions/182924/mod09a1-qc-layer/252404#252404)
+-   [GIS Stackexchange: How can I parse modis MOD13Q1 quality layers in R?](https://gis.stackexchange.com/questions/144441/how-can-i-parse-modis-mod13q1-quality-layers-in-r?rq=1)
+-   [GIS Stackexchange: Landsat 8 cloud band: how to understand their (bit) coding?](https://gis.stackexchange.com/questions/314792/landsat-8-cloud-band-how-to-understand-their-bit-coding)
+
 What I provide here:
 
 -   the function `lsqa_pixel_table()`, to extract cloud attributes from a Landsat 8 SR `pixel_qa` value
