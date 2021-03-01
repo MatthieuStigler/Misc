@@ -16,12 +16,12 @@ library(stringr)
 #' Convert a Java text file to a R text file
 #' @param path the input file
 #' @param path_out The output file. If null, will simply replace the extension by .R
-mat_ee_javaScript_to_r <- function(path, path_out=NULL){
+ee_javaScript_to_r <- function(path, path_out=NULL){
   if(!file.exists(path)) stop("File not there?!")
   if(is.null(path_out)) path_out <- str_replace_all(path, "\\..+$", ".R")
   f <- file(path)
   l <- readLines(f, warn = FALSE)
-  l_fin <- mat_ee_java_to_r(l)
+  l_fin <- ee_java_to_r(l)
   writeLines(l_fin,  path_out)
 }
 
@@ -29,8 +29,8 @@ mat_ee_javaScript_to_r <- function(path, path_out=NULL){
 #' Convert EE Java characters to R 
 #' @param con A connection, can simply be a character input
 #' @examples
-#' mat_ee_java_to_r("var res = x.reduceColumns(ee.Reducer.frequencyHistogram(), [str]).")
-mat_ee_java_to_r <- function(con){
+#' ee_java_to_r("var res = x.reduceColumns(ee.Reducer.frequencyHistogram(), [str]).")
+ee_java_to_r <- function(con){
   
   # if(str_detect(con, "\\n")) con <- str_remove_all(con, "\\n")
   is_comment <- str_detect(con, "/\\/")
@@ -79,9 +79,9 @@ mat_ee_java_to_r <- function(con){
 
 
 if(FALSE){
-  mat_ee_java_to_r("var a = ee.Image()")
+  ee_java_to_r("var a = ee.Image()")
   path <- "~/Dropbox/Documents/Ordi/google_services/earthEngine/rgee/script_java.txt"
-  mat_ee_javaScript_to_r(path)
+  ee_javaScript_to_r(path)
 
   con="var coefficients = ee.Array([
   [0.3037, 0.2793, 0.4743, 0.5585, 0.5082, 0.1863],
@@ -91,12 +91,12 @@ if(FALSE){
   [-0.3280, 0.0549, 0.1075, 0.1855, -0.4357, 0.8085],
   [0.1084, -0.9022, 0.4120, 0.0573, -0.0251, 0.0238]
 ]);"
-mat_ee_java_to_r(con)
+ee_java_to_r(con)
 
   ## Modules
   
-  mat_ee_java_to_r("var res = x.reduceColumns(ee.Reducer.frequencyHistogram(), [str]).")
-  mat_ee_java_to_r("  var date_YMd=  date$format")
+  ee_java_to_r("var res = x.reduceColumns(ee.Reducer.frequencyHistogram(), [str]).")
+  ee_java_to_r("  var date_YMd=  date$format")
   str_replace("var date_YMd=  date$format",
               "var (([:alnum:]|_)+ *=)", "\\1")
 }
