@@ -2,8 +2,10 @@ library(stringr)
 
 ## to do:
 ## 2) difficult handling of {}
-##      - usually as list
-##      - but not when one function takes many arguments, cf reduceRegion
+##      - usually convert to list
+##      - BUT:
+##            -not when one function takes many arguments, cf reduceRegion => remove
+##            -not keep when function() before!? => keep {}
 ## 3) merge lines when one starts with $ !
 ## 4) Exclude comment lines
 ## 5) How to handle multiline?!
@@ -33,19 +35,19 @@ ee_javaScript_to_r <- function(path, path_out=NULL){
 ee_java_to_r <- function(con){
   
   # if(str_detect(con, "\\n")) con <- str_remove_all(con, "\\n")
-  is_comment <- str_detect(con, "/\\/")
+  # is_comment <- str_detect(con, "/\\/") # unused for now
   
-  ## change comments
+  ## change comments from // to #
   l1 <- str_replace_all(con, "//", "##")
   
   ## remove var
-  l2 <- str_replace(l1, "var (([:alnum:]|_)+ *=)", "\\1")
+  l2 <- str_replace_all(l1, "var (([:alnum:]|_)+ *=)", "\\1")
   
   ## remove 'return' unless has ( after
   l2b <- gsub("return(?! ?\\()", "", l2, perl=TRUE)
   
   ## change . to $
-  l3 <- str_replace_all(l2b, "([aA-zZ\\)]| )\\.([[aA-zZ]])", "\\1$\\2")
+  l3 <- str_replace_all(l2b, "([aA-zZ0-9\\)]| )\\.([[aA-zZ]])", "\\1$\\2")
   
   ## remove space before $
   l3b <- str_replace_all(l3, " +\\$", "$")
