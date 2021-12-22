@@ -19,7 +19,7 @@ gc_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE){
   if(run) system(gs_call, intern=TRUE)
 }
 
-gs_download <- function(input = "gs://general_from_ee/US_soils/*",
+gs_download <- function(input = "gs://bucket_name/folder/*",
                         output,
                         output_base_dir=NULL,
                         quiet=TRUE,
