@@ -19,6 +19,25 @@ gc_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE){
   if(run) system(gs_call, intern=TRUE)
 }
 
+gs_download <- function(input = "gs://general_from_ee/US_soils/*",
+                        output,
+                        output_base_dir=NULL,
+                        quiet=TRUE,
+                        cmd = c("rsync -r", "cp"),
+                        run=TRUE) {
+  cmd <-  match.arg(cmd)
+  if(!is.null(output_base_dir)) {
+    out_path <- paste0(output_base_dir,  "/", output) %>% 
+      str_replace( "//", "/")
+  } else {
+    out_path <- output
+  }
+  if(str_detect(out_path, " ")) out_path <-  paste0("'", out_path, "'")
+  cmd <- paste0("-m ",  cmd, " ", input, " ", out_path)
+  gs_call_any(cmd, quiet=quiet, run=run)
+}
+
+
 gs_check_is_there <- function(path, quiet=TRUE) {
   path <- util_check_add_gs(path)
   gs_call <- paste("ls", path)
