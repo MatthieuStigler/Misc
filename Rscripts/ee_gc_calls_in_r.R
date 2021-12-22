@@ -1,11 +1,10 @@
-gs_call_any <- function(x, quiet=TRUE){
+gs_call_any <- function(x, quiet=TRUE, run=TRUE){
   
   gsi_path <- util_get_gs_path()
   ## call
   call <- paste(gsi_path, x)
   if(!quiet) print(call)
-  call_out <- system(call, intern=TRUE)
-  call_out
+  if(run) system(call, intern=TRUE)
 }
 
 
@@ -21,19 +20,12 @@ gc_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE){
 
 gs_download <- function(input = "gs://bucket_name/folder/*",
                         output,
-                        output_base_dir=NULL,
                         quiet=TRUE,
                         cmd = c("rsync -r", "cp"),
                         run=TRUE) {
   cmd <-  match.arg(cmd)
-  if(!is.null(output_base_dir)) {
-    out_path <- paste0(output_base_dir,  "/", output) %>% 
-      str_replace( "//", "/")
-  } else {
-    out_path <- output
-  }
-  if(str_detect(out_path, " ")) out_path <-  paste0("'", out_path, "'")
-  cmd <- paste0("-m ",  cmd, " ", input, " ", out_path)
+  if(str_detect(output, " ")) output <-  paste0("'", output, "'")
+  cmd <- paste0("-m ",  cmd, " ", input, " ", output)
   gs_call_any(cmd, quiet=quiet, run=run)
 }
 
