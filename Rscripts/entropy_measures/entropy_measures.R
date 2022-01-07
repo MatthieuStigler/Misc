@@ -11,11 +11,13 @@
 #' ntp_entropy_shannon(p)
 ntp_entropy_shannon <- function(p, base = exp(1), as_df=TRUE) {
   if(abs(sum(p)-1)>0.00000000001) warning("p does not sum to 1?")
+  N <- length(p)
   entropy <- -sum(p*log(p, base=base))
-  entropy_max <-  log(length(p), base=base)
+  entropy_max <-  log(N, base=base)
+  eveness <- if(N>1) entropy/entropy_max else 0
   
   ## return result
-  res <- c(entropy=entropy, eveness= entropy/entropy_max)
+  res <- c(entropy=entropy, eveness= eveness)
   if(as_df) res <- as.data.frame(t(res))
   res
 }
@@ -87,6 +89,7 @@ if(FALSE){
 
 if(FALSE){
   p <- c(0.2, 0.3, 0.4, 0.1)
+  p <- c(1)
   N_p <- length(p)
   res_here <- ntp_entropy_shannon(p)
   res_here_2 <- ntp_entropy_shannon(p, base=2)
