@@ -3,9 +3,9 @@
 #'@param p vector of shares
 #'@param as_df return result as df or vector?
 #'@details computes the stndard Shannon's entropy, as well
-#'as the 'eveness' measure (also calles rescaled/standardized entropy), 
+#'as the 'evenness' measure (also calles rescaled/standardized entropy), 
 #'which is entropy diided by the maximum possible entropy. 
-#'Hence eveness is between 0 and 1. 
+#'Hence evenness is between 0 and 1. 
 #' @examples
 #' p <- c(0.2, 0.3, 0.4, 0.1)
 #' ntp_entropy_shannon(p)
@@ -14,10 +14,10 @@ ntp_entropy_shannon <- function(p, base = exp(1), as_df=TRUE) {
   N <- length(p)
   entropy <- -sum(p*log(p, base=base))
   entropy_max <-  log(N, base=base)
-  eveness <- if(N>1) entropy/entropy_max else 0
+  evenness <- if(N>1) entropy/entropy_max else 0
   
   ## return result
-  res <- c(entropy=entropy, eveness= eveness)
+  res <- c(entropy=entropy, evenness= evenness)
   if(as_df) res <- as.data.frame(t(res))
   res
 }
@@ -97,12 +97,12 @@ if(FALSE){
   ## compare with another package
   require(DescTools)
   all.equal(res_here[["entropy"]], DescTools::Entropy(p, base = exp(1)))
-  all.equal(res_here[["eveness"]],
+  all.equal(res_here[["evenness"]],
             DescTools::Entropy(p, base = exp(1))/log(N_p))
   
   ## check in base 2
   all.equal(res_here_2[["entropy"]], DescTools::Entropy(p))
-  all.equal(res_here_2[["eveness"]],
+  all.equal(res_here_2[["evenness"]],
             DescTools::Entropy(p)/log2(N_p))
     
 }
