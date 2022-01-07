@@ -1,3 +1,21 @@
+#' Estimate Shannon's entropy
+#'
+#'@param p vector of shares
+#'@details computes the stndard Shannon's entropy, as well
+#'as the 'eveness' measure (also calles rescaled/standardized entropy), 
+#'which is entropy diided by the maximum possible entropy. 
+#'Hence eveness is between 0 and 1. 
+#' @examples
+#' p <- c(0.2, 0.3, 0.4, 0.2)
+#' ntp_entropy_shannon(p)
+ntp_entropy_shannon <- function(p, base = exp(1)) {
+  if(abs(sum(p)-1)>0.00000000001) warning("p does not sum to 1?")
+  entropy <- -sum(p*log(p, base=base))
+  entropy_max <-  log(length(p), base=base)
+  c(entropy=entropy, eveness= entropy/entropy_max)
+}
+
+
 require(Rsolnp)
 
 #' Estimate Rao's quadratic entropy
@@ -11,9 +29,10 @@ require(Rsolnp)
 #' @examples
 #'    D <- as.matrix(dist(t(iris[,1:4])))
 #'    p <- c(0.2, 0.3, 0.4, 0.2)
-#'    ntp_quadratic(p, D)
-ntp_quadratic <- function(p, D, add_standardized=TRUE) {
-  raw <- ntp_intrnl_fo_obj(p, D)
+#'    ntp_entropy_quadratic(p, D)
+ntp_entropy_quadratic <- function(p, D, add_standardized=TRUE) {
+  if(abs(sum(p)-1)>0.00000000001) warning("p does not sum to 1?")
+  raw <- ntp_intrnl_fo_objective(p, D)
   if(add_standardized) {
     out <- ntp_intrnl_get_max(D)
     res <- -1*tail(out$values, 1)
@@ -21,7 +40,7 @@ ntp_quadratic <- function(p, D, add_standardized=TRUE) {
   c(raw=raw, standardized=raw/res)
 }
 
-ntp_intrnl_fo_obj <- function(x, D) {
+ntp_intrnl_fo_objectiveective <- function(x, D) {
   t(x) %*% D %*% x
 }
 
@@ -33,7 +52,7 @@ ntp_intrnl_get_max <- function(D) {
   
   solnp_silent <- function(...) suppressWarnings(Rsolnp::solnp(...))
   out_solnp_max <- solnp_silent(pars = theta, 
-                                 fun =  function(x) -ntp_intrnl_fo_obj(x, D),
+                                 fun =  function(x) -ntp_intrnl_fo_objective(x, D),
                                  eqfun=ntp_intrnl_fo_equal, 
                                  eqB=1,
                                  LB=rep(0, K),
@@ -51,41 +70,29 @@ if(FALSE){
   D <- as.matrix(dist(t(iris[,1:4])))
   K <- nrow(D)
   p <- rep(1/K, K)
-  ntp_quadratic(p, D)
+  ntp_entropy_quadratic(p, D)
   
   p2 <- c(0.8, 0.1, 0.06, 0.04)
-  ntp_quadratic(p2, D)
+  ntp_entropy_quadratic(p2, D)
 }
 
 
-
-
-
-################################
-#'## PCA
-################################
-
-
-fo_equal_PCA <- function(x) sum(x^2)
-
-get_max_PCA <- function(D) {
-  K <- nrow(D)
-  theta <-  rep(1/K, K)
-  
-  out_solnp_max <- solnp(pars = theta, 
-                         fun =  function(x) -ntp_intrnl_fo_obj(x, D),
-                         eqfun= fo_equal_PCA, 
-                         eqB=1)
-  if(out_solnp_max$convergence!=0) warning("Did not converge!?")
-  out_solnp_max
-}
-
-## PCA?
 if(FALSE){
+  p <- c(0.2, 0.3, 0.4, 0.1)
+  N_p <- length(p)
+  res_here <- ntp_entropy_shannon(p)
+  res_here_2 <- ntp_entropy_shannon(p, base=2)
   
-  S <- cov(iris %>% select(-Species))
-  sol_PCA <- get_max_PCA(S)
-  sol_PCA_eigen <- eigen(S)$vectors[,1]
-  all.equal(fo_obj(sol_PCA$pars, S), 
-            fo_obj(sol_PCA_eigen, S))
+  ## compare with another package
+  require(DescTools)
+  all.equal(res_here[["entropy"]], DescTools::Entropy(p, base = exp(1)))
+  all.equal(res_here[["eveness"]],
+            DescTools::Entropy(p, base = exp(1))/log(N_p))
+  
+  ## check in base 2
+  all.equal(res_here_2[["entropy"]], DescTools::Entropy(p))
+  all.equal(res_here_2[["eveness"]],
+            DescTools::Entropy(p)/log2(N_p))
+    
 }
+
