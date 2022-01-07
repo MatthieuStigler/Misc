@@ -37,7 +37,7 @@ devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/mas
 ```
 
 ```
-## ℹ SHA-1 hash of file is 69c81fc2f5b80f8acdb3c19012b7a656c0507925
+## SHA-1 hash of file is 5182ee9320d300abe00e70ee12497e70613bc783
 ```
 
 ```
@@ -52,8 +52,8 @@ ntp_entropy_shannon(p)
 ```
 
 ```
-##   entropy   eveness 
-## 0.7063330 0.5095116
+##    entropy   eveness
+## 1 0.706333 0.5095116
 ```
 
 ```r
@@ -61,8 +61,8 @@ ntp_entropy_quadratic(p, D)
 ```
 
 ```
-##          raw standardized 
-##   12.9045246    0.4461746
+##   entropy_quadratic entropy_quadratic_standardized
+## 1          12.90452                      0.4461746
 ```
 
 
