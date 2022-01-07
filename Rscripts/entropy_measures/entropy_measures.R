@@ -40,7 +40,7 @@ ntp_entropy_quadratic <- function(p, D, add_standardized=TRUE) {
   c(raw=raw, standardized=raw/res)
 }
 
-ntp_intrnl_fo_objectiveective <- function(x, D) {
+ntp_intrnl_fo_objective <- function(x, D) {
   t(x) %*% D %*% x
 }
 
