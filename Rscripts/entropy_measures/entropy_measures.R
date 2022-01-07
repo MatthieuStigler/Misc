@@ -1,18 +1,23 @@
 #' Estimate Shannon's entropy
 #'
 #'@param p vector of shares
+#'@param as_df return result as df or vector?
 #'@details computes the stndard Shannon's entropy, as well
 #'as the 'eveness' measure (also calles rescaled/standardized entropy), 
 #'which is entropy diided by the maximum possible entropy. 
 #'Hence eveness is between 0 and 1. 
 #' @examples
-#' p <- c(0.2, 0.3, 0.4, 0.2)
+#' p <- c(0.2, 0.3, 0.4, 0.1)
 #' ntp_entropy_shannon(p)
-ntp_entropy_shannon <- function(p, base = exp(1)) {
+ntp_entropy_shannon <- function(p, base = exp(1), as_df=TRUE) {
   if(abs(sum(p)-1)>0.00000000001) warning("p does not sum to 1?")
   entropy <- -sum(p*log(p, base=base))
   entropy_max <-  log(length(p), base=base)
-  c(entropy=entropy, eveness= entropy/entropy_max)
+  
+  ## return result
+  res <- c(entropy=entropy, eveness= entropy/entropy_max)
+  if(as_df) res <- as.data.frame(t(res))
+  res
 }
 
 
@@ -30,14 +35,17 @@ require(Rsolnp)
 #'    D <- as.matrix(dist(t(iris[,1:4])))
 #'    p <- c(0.2, 0.3, 0.4, 0.2)
 #'    ntp_entropy_quadratic(p, D)
-ntp_entropy_quadratic <- function(p, D, add_standardized=TRUE) {
+ntp_entropy_quadratic <- function(p, D, add_standardized=TRUE, as_df=TRUE) {
   if(abs(sum(p)-1)>0.00000000001) warning("p does not sum to 1?")
   raw <- ntp_intrnl_fo_objective(p, D)
   if(add_standardized) {
     out <- ntp_intrnl_get_max(D)
     res <- -1*tail(out$values, 1)
   }
-  c(entropy_quadratic=raw, entropy_quadratic_standardized=raw/res)
+  ## return result
+  res <- c(entropy_quadratic=raw, entropy_quadratic_standardized=raw/res)
+  if(as_df) res <- as.data.frame(t(res))
+  res
 }
 
 ntp_intrnl_fo_objective <- function(x, D) {
