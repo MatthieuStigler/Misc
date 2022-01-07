@@ -37,7 +37,7 @@ ntp_entropy_quadratic <- function(p, D, add_standardized=TRUE) {
     out <- ntp_intrnl_get_max(D)
     res <- -1*tail(out$values, 1)
   }
-  c(raw=raw, standardized=raw/res)
+  c(entropy_quadratic=raw, entropy_quadratic_standardized=raw/res)
 }
 
 ntp_intrnl_fo_objective <- function(x, D) {
