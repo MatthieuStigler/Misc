@@ -76,7 +76,6 @@ ee_check_has_asset <- function(ee_id, user_name, quiet=TRUE) {
   
   # call
   ee_call <- paste("ls", ee_id_last)
-  if(!quiet) print(ee_call)
   out_check <- ee_call_any(ee_call, user=user_name, quiet=quiet)
   
   # ana
