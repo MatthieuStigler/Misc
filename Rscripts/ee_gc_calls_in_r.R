@@ -24,7 +24,7 @@ gs_download <- function(input = "gs://bucket_name/folder/*",
                         cmd = c("rsync -r", "cp"),
                         run=TRUE) {
   cmd <-  match.arg(cmd)
-  if(str_detect(output, " ")) output <-  paste0("'", output, "'")
+  if(stringr::str_detect(output, " ")) output <-  paste0("'", output, "'")
   cmd <- paste0("-m ",  cmd, " ", input, " ", output)
   gs_call_any(cmd, quiet=quiet, run=run)
 }
@@ -43,7 +43,7 @@ gs_check_is_there <- function(path, quiet=TRUE) {
 
 
 util_check_add_gs <- function(gs_path) {
-  if(!str_detect(gs_path, "^gs://")) gs_path <- paste("gs://", gs_path, sep="")
+  if(!stringr::str_detect(gs_path, "^gs://")) gs_path <- paste("gs://", gs_path, sep="")
   gs_path
 }
 
@@ -53,20 +53,28 @@ util_get_gs_path <- function(){
 }
 
 util_get_ee_path <- function(){
-  out <- system("which earthengine", intern=TRUE)
-  out
+  
+  renviron_path <- Sys.getenv("EARTHENGINE_PYTHON")
+  if(renviron_path!="") {
+    renviron_path <- stringr::str_replace(renviron_path, "python$", "earthengine")
+    return(renviron_path)
+  }
+  system_path <- suppressWarnings(system("which earthengine", intern=TRUE))
+  is_inpath <- is.null(attr(system_path, "status"))
+  if(is_inpath) return(system_path)
+  warning("No earthengine found, set env variable 'EARTHENGINE_PYTHON'")
 }
 
 
 ###
-ee_call_any <- function(x, user= c("mmstigler", "mat"), quiet=TRUE, run = TRUE){
+ee_call_any <- function(call, quiet=TRUE, run = TRUE){
   
   ee_path <- util_get_ee_path()
   
   ## call
-  call <- paste(ee_path, x)
-  if(!quiet) print(call)
-  if(run) system(call, intern=TRUE)
+  call_full <- paste(ee_path, call)
+  if(!quiet) print(call_full)
+  if(run) system(call_full, intern=TRUE)
 }
 
 
@@ -76,10 +84,20 @@ ee_check_has_asset <- function(ee_id, user_name, quiet=TRUE) {
   
   # call
   ee_call <- paste("ls", ee_id_last)
-  out_check <- ee_call_any(ee_call, user=user_name, quiet=quiet)
+  out_check <- ee_call_any(ee_call, quiet=quiet)
   
   # ana
-  any(str_detect(out_check, ee_id))
+  any(stringr::str_detect(out_check, ee_id))
+}
+
+#' @examples 
+#' util_format_id("test", "samOne")
+#' util_format_id("users/samOne/test")
+#' util_format_id("projects/proj/test")
+util_format_id <- function(ee_id=NULL, user_name=NULL) {
+  if(grepl(ee_id, "^projects|^user")) return(ee_id)
+  if(is.null(user_name)) return(ee_id)
+  paste(user_name, ee_id, sep="/")
 }
 
 ee_rm <- function(ee_id=NULL, user_name, quiet=TRUE) {
@@ -87,18 +105,22 @@ ee_rm <- function(ee_id=NULL, user_name, quiet=TRUE) {
   call <- paste("rm",  user_name, sep=" ")
   call <- paste(call, ee_id, sep="/")
   
-  ee_call_any(x= call, user=user_name, quiet=quiet)
+  ee_call_any(x= call, quiet=quiet)
 }
 
 
-ee_upload <- function(user_name,
-                      gs_file, ee_id, 
+ee_upload <- function(ee_id, 
+                      user_name=NULL,
+                      gs_file, 
                       quiet=TRUE, type=c("table", "image"),
                       delete=TRUE, run=TRUE) {
   
   type <- match.arg(type)
   
   gs_file <- util_check_add_gs(gs_file)
+  
+  ## clean ee_id
+  ee_id
   
   ## check if not already there on ee
   is_there_ee <- ee_check_has_asset(ee_id, user_name, quiet)
@@ -108,20 +130,23 @@ ee_upload <- function(user_name,
   if(!gs_check_is_there(gs_file)) warning("File not there on gs?")
   
   ## upload
+  ee_id_clean <- util_format_id(ee_id, user_name )
   call <- paste(" upload ",
-                type, " --asset_id=users/", 
-                user_name, "/", ee_id,
+                type, " --asset_id=", 
+                ee_id_clean,
                 " ", gs_file, sep="")
   out <- ee_call_any(call, run=run, quiet=quiet)
   if(run) {
-    return(tibble(gs=gs_file, id=ee_id, task=util_capt_task(out=out)))
+    return(tibble::tibble(gs=gs_file, id=ee_id, task=util_capt_task(out=out)))
   }
 }
 
 
+
+
 util_clean_ee_return <- function(out){
-  if(any(str_detect(out, "Running command using"))){
-    out <- out[!str_detect(out, "Running command using") & out!=""]
+  if(any(stringr::str_detect(out, "Running command using"))){
+    out <- out[!stringr::str_detect(out, "Running command using") & out!=""]
   }
   out
 }
@@ -129,7 +154,7 @@ util_clean_ee_return <- function(out){
 util_capt_task <- function(out) {
   out <- util_clean_ee_return(out)
   
-  if(!str_detect(out, "Started upload task with ID")) {
+  if(!stringr::str_detect(out, "Started upload task with ID")) {
     res <- out
   } else {
     res <- str_replace(out, "Started upload task with ID: ", "")
