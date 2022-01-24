@@ -117,9 +117,28 @@ ee_upload <- function(user_name,
                 " ", gs_file, sep="")
   if(!quiet) print(call)
   out <- system(call, intern=TRUE)
-  tibble(gs=gs_file, id=ee_id, task=capt_task(out=out))
+  tibble(gs=gs_file, id=ee_id, task=util_capt_task(out=out))
 }
 
+
+util_clean_ee_return <- function(out){
+  if(any(str_detect(out, "Running command using"))){
+    out <- out[!str_detect(out, "Running command using") & out!=""]
+  }
+  out
+}
+
+util_capt_task <- function(out) {
+  out <- util_clean_ee_return(out)
+  
+  if(!str_detect(out, "Started upload task with ID")) {
+    res <- out
+  } else {
+    res <- str_replace(out, "Started upload task with ID: ", "")
+  }
+  
+  res
+}
 
 
 if(FALSE){
