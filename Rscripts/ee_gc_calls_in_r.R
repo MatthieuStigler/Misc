@@ -59,15 +59,14 @@ util_get_ee_path <- function(){
 
 
 ###
-ee_call_any <- function(x, user= c("mmstigler", "mat"), quiet=TRUE){
+ee_call_any <- function(x, user= c("mmstigler", "mat"), quiet=TRUE, run = TRUE){
   
   ee_path <- util_get_ee_path()
   
   ## call
   call <- paste(ee_path, x)
   if(!quiet) print(call)
-  call_out <- system(call, intern=TRUE)
-  call_out
+  if(run) system(call, intern=TRUE)
 }
 
 
@@ -96,7 +95,7 @@ ee_rm <- function(ee_id=NULL, user_name, quiet=TRUE) {
 ee_upload <- function(user_name,
                       gs_file, ee_id, 
                       quiet=TRUE, type=c("table", "image"),
-                      delete=TRUE) {
+                      delete=TRUE, run=TRUE) {
   
   type <- match.arg(type)
   
@@ -110,14 +109,14 @@ ee_upload <- function(user_name,
   if(!gs_check_is_there(gs_file)) warning("File not there on gs?")
   
   ## upload
-  call <- paste(util_get_ee_path(),
-                " upload ",
+  call <- paste(" upload ",
                 type, " --asset_id=users/", 
                 user_name, "/", ee_id,
                 " ", gs_file, sep="")
-  if(!quiet) print(call)
-  out <- system(call, intern=TRUE)
-  tibble(gs=gs_file, id=ee_id, task=util_capt_task(out=out))
+  out <- ee_call_any(call, run=run, quiet=quiet)
+  if(run) {
+    return(tibble(gs=gs_file, id=ee_id, task=util_capt_task(out=out)))
+  }
 }
 
 
