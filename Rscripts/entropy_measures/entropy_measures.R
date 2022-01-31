@@ -39,6 +39,7 @@ require(Rsolnp)
 #'    ntp_entropy_quadratic(p, D)
 ntp_entropy_quadratic <- function(p, D, add_standardized=TRUE, as_df=TRUE) {
   if(abs(sum(p)-1)>0.00000000001) warning("p does not sum to 1?")
+  if(anyNA(D))  warning("D has NAs?")
   raw <- ntp_intrnl_fo_objective(p, D)
   if(add_standardized) {
     out <- ntp_intrnl_get_max(D)

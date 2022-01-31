@@ -41,7 +41,7 @@ devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/mas
 ```
 
 ```
-## SHA-1 hash of file is 7dd0a42d9e4521e6760cd4336cc082d722b0ef4a
+## ℹ SHA-1 hash of file is 7dd0a42d9e4521e6760cd4336cc082d722b0ef4a
 ```
 
 ```
