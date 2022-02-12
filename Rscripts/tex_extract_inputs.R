@@ -49,6 +49,9 @@ if(FALSE){
   ## test lower ones
   extract_input("\\include{tables/R2_mean_by_level_tabular_rJuWwRe}")
   extract_includegraphics("\\centering{}\\includegraphics[width=0.9\\columnwidth]{figures/yld_SCYM_glob_loc_MANU_rLoHySc.png}")
+  
+  ## use me:
+  devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/Rscripts/tex_extract_inputs.R")
 }
 
 
