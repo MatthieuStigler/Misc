@@ -35,11 +35,15 @@ require(Rsolnp)
 #' 
 #' @examples
 #'    D <- as.matrix(dist(t(iris[,1:4])))
-#'    p <- c(0.2, 0.3, 0.4, 0.2)
+#'    p <- c(0.2, 0.3, 0.4, 0.1)
 #'    ntp_entropy_quadratic(p, D)
+#'    p_not1 <- c(0.2, 0.3, 0.4, 0.2)
+#'    ntp_entropy_quadratic(p_not1, D)
 ntp_entropy_quadratic <- function(p, D, add_standardized=TRUE, as_df=TRUE) {
   if(abs(sum(p)-1)>0.00000000001) warning("p does not sum to 1?")
   if(anyNA(D))  warning("D has NAs?")
+  if(length(p)!=nrow(D)) stop("p should have same length as D's rows/cols")
+  
   raw <- ntp_intrnl_fo_objective(p, D)
   if(add_standardized) {
     out <- ntp_intrnl_get_max(D)
