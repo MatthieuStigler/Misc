@@ -11,7 +11,13 @@ gs_call_any <- function(x, quiet=TRUE, run=TRUE){
 gc_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE){
   
   gs_path <- util_check_add_gs(gs_path)
-  if(!file.exists(local_path)) warning("local_path not found?")
+  
+  ## check file(s) exist
+  has_wildcard <- str_detect(basename(local_path), "\\*")
+  if(!file.exists(local_path) && !has_wildcard) warning("local_path not found?")
+  if(has_wildcard && !dir.exists(dirname(local_path))) warning("basename of local_path not found?")
+  
+  
   local_path <- str_replace(local_path, "\\.shp$", "\\.\\*")
   gs_call <- paste("gsutil -m cp", local_path,  gs_path)
   if(!quiet) print(gs_call)
