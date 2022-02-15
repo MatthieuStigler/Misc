@@ -27,9 +27,8 @@ gc_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE){
 gs_download <- function(input = "gs://bucket_name/folder/*",
                         output,
                         quiet=TRUE,
-                        cmd = c("rsync -r", "cp"),
+                        cmd = "rsync -r",
                         run=TRUE) {
-  cmd <-  match.arg(cmd)
   if(stringr::str_detect(output, " ")) output <-  paste0("'", output, "'")
   cmd <- paste0("-m ",  cmd, " ", input, " ", output)
   gs_call_any(cmd, quiet=quiet, run=run)
