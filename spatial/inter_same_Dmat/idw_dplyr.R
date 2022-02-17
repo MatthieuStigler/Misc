@@ -72,7 +72,7 @@ idw_getW <- function (data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf,
 #   if(inherits(data, "sf")) {
 #     data_df <- data %>%
 #       st_set_geometry(NULL) %>%
-#       as_data_frame
+#       as_tibble
 #   } else {
 #     data_df <- data
 #   }
@@ -122,7 +122,7 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
   if(inherits(data, "sf")) {
     data_df <- data %>%
       st_set_geometry(NULL) %>%
-      as_data_frame
+      as_tibble
   } else {
     data_df <- data
   }
@@ -203,14 +203,14 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
                                                              force= force,
                                                              normalize=normalize,
                                                              D=D[i, ]) %*% Y)
-      res <- do.call("rbind", outp_par) %>% as_data_frame
+      res <- do.call("rbind", outp_par) %>% as_tibble
     } else {
       W <- idw_getW(data=data, newdata=newdata, 
                     idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, 
                     force= force,
                     normalize=normalize,
                     D=D)
-      res <- as_data_frame(W %*% Y)
+      res <- as_tibble(W %*% Y)
     }
   }
   if(!is.null(add_name)) {
@@ -263,7 +263,7 @@ idw0_mat <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
 ##
 # dist_mat_sf <- function(data1, data2) {
 #   st_distance(st_as_sf(meuse.grid), st_as_sf(meuse)) %>%
-#     as_data_frame() %>%
+#     as_tibble() %>%
 #     mutate(index= 1:n()) %>%
 #     select(index, everything())
 # }
@@ -275,8 +275,9 @@ dist_mat_sf <- function(data_1, data_2) {
   } else {
     dists <- st_distance(data_2, data_1) 
   }
+  if(is.null(colnames(dists))) colnames(dists) <- paste0("V", 1:ncol(dists))
   dists %>%
-    as_data_frame() %>%
+    as_tibble() %>%
     mutate(index= 1:n()) %>%
     select(index, everything())
 }
@@ -289,7 +290,7 @@ idw_tidy_way <- function(data, newdata, idp=2, nmax=Inf, nmin=0, maxdist=Inf){
   ## long
   D_df_l <- D_df %>%
     gather(obs, distance, -index) %>%
-    left_join(mutate(as_data_frame(meuse), obs=paste("V", 1:n(), sep="")), by="obs" )
+    left_join(mutate(as_tibble(meuse), obs=paste("V", 1:n(), sep="")), by="obs" )
 
   if(!is.infinite(nmax)) {
     D_df_l <- D_df_l %>%

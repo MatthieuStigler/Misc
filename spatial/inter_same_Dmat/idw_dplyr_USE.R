@@ -6,8 +6,8 @@ library(sf)
 library(tidyverse)
 
 
-source("/home/matifou/Dropbox/GIS_server/r_scripts_gis_general/idw_dplyr.R")
-
+# source("/home/matifou/Dropbox/GIS_server/r_scripts_gis_general/idw_dplyr.R")
+devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/inter_same_Dmat/idw_dplyr.R")
 
 ################
 ## DATA
@@ -22,7 +22,7 @@ gridded(meuse.grid) = ~x+y
 meuse_sf <- st_as_sf(meuse)
 meuse.grid_sf <- st_as_sf(meuse.grid)
 
-D_sp <- dist_mat_sf(data_1=meuse, meuse.grid)
+D_sp <- dist_mat_sf(data_1=meuse, data_2=meuse.grid)
 D_sf <- dist_mat_sf(meuse_sf, meuse.grid_sf)
 
 all.equal(D_sp, D_sf)
@@ -30,7 +30,7 @@ all.equal(D_sp, D_sf)
 
 ## explanation: 
 ##    -data: we have 155 observed obs (meuse: 155 x 12), 
-##    -newdata: want on 3103 points
+##    -newdata: want on 3103 points (meuse.grid)
 ##    -D: 3103 x 155, i.e. newpoint to old point
 ##    -W: weights from D 
 ##    -W %*% newdata: (3103 x 155) x (155 x k) gives 3130 x k new data
@@ -41,7 +41,9 @@ all.equal(D_sp, D_sf)
 ################
 ## RUNS
 ################
-meuse.gstat <- gstat(id = "zinc", formula = zinc ~ 1, data = meuse, set = list(idp = 2))
+
+meuse.gstat <- gstat(id = "zinc", formula = zinc ~ 1, data = meuse,
+                     set = list(idp = 2))
 
 meuse.gstat2 <- gstat(id = "zinc", formula = zinc ~ 1, data = meuse, 
                       maxdist = 205, set = list(idp = 2))
@@ -54,11 +56,11 @@ meuse.gstat5 <- gstat(id = "zinc", formula = zinc ~ 1, data = meuse,
                       nmin=3, maxdist=205, force=TRUE, set = list(idp = 2))
 
 
-gs_1 <- predict(meuse.gstat, meuse.grid) %>%  as_data_frame()
-gs_2 <- predict(meuse.gstat2, meuse.grid) %>%  as_data_frame()
-gs_3 <- predict(meuse.gstat3, meuse.grid) %>%  as_data_frame()
-gs_4 <- predict(meuse.gstat4, meuse.grid) %>%  as_data_frame()
-gs_5 <- predict(meuse.gstat5, meuse.grid) %>%  as_data_frame()
+gs_1 <- predict(meuse.gstat, meuse.grid) %>%  as_tibble()
+gs_2 <- predict(meuse.gstat2, meuse.grid) %>%  as_tibble()
+gs_3 <- predict(meuse.gstat3, meuse.grid) %>%  as_tibble()
+gs_4 <- predict(meuse.gstat4, meuse.grid) %>%  as_tibble()
+gs_5 <- predict(meuse.gstat5, meuse.grid) %>%  as_tibble()
 
 id_man1 <- idw0_mat(data = meuse, newdata=meuse.grid, y= meuse$zinc)
 id_man2 <- idw0_mat(data = meuse, newdata=meuse.grid, y= meuse$zinc, maxdist=205)
@@ -128,9 +130,6 @@ all.equal(id_man5$value, id_fin_multi_5$zinc_pred)
 ##########################
 
 meuse.grid_sf2 <- meuse.grid_sf %>% select(geometry)
-meuse_sf_4_df <- meuse_sf_4 %>%
-  st_set_geometry(NULL) %>%
-  as_data_frame()
 
 Y <- as.data.frame(meuse)[c("cadmium", "copper", "lead", "zinc")]
 Y_mat <- as.matrix(Y)
@@ -138,6 +137,11 @@ Y_mat <- as.matrix(Y)
 meuse_sf_4 <- meuse %>%
   st_as_sf() %>%
   select(cadmium, copper, lead, zinc)
+
+meuse_sf_4_df <- meuse_sf_4 %>%
+  st_set_geometry(NULL) %>%
+  as_tibble()
+
 
 id_math_Y <- idw_tidy(data = meuse_sf_4, newdata = meuse.grid_sf2)
 id_math_Y
@@ -148,7 +152,6 @@ plot(select(id_math_Y, cadmium_pred), reset = FALSE)
 plot(select(meuse_sf, cadmium), add=TRUE)
 
 ### gstat way
-
 meuse.gstat <- gstat(id = "zinc", formula = zinc ~ 1, data = meuse, 
                      nmax = 7, set = list(idp = .5))
 meuse.gstat
@@ -185,12 +188,13 @@ all.equal(res_all, rbind(res_1, res_2))
 
 ## now bind
 library(magrittr)
-res_bind <- rbind(as_data_frame(res_1 %*% as.matrix(meuse_sf_4_df)),
-                  as_data_frame(res_2 %*% as.matrix(meuse_sf_4_df)))
+res_bind <- rbind(as_tibble(res_1 %*% as.matrix(meuse_sf_4_df)),
+                  as_tibble(res_2 %*% as.matrix(meuse_sf_4_df)))
 
-id_math_Y <- idw_tidy(data = meuse_sf_4, newdata=meuse.grid_sf %>% select(geometry)) %>% 
+id_math_Y <- idw_tidy(data = meuse_sf_4, newdata=meuse.grid_sf %>% 
+                        select(geometry)) %>% 
   st_set_geometry(NULL) %>%
-  as_data_frame() %>%
+  as_tibble() %>%
   set_colnames(str_remove(colnames(.), "_pred"))
 
 ## is same? yes!!
@@ -232,7 +236,7 @@ meuse_sf_NA <- meuse_sf %>%
 gs_out_NA <- meuse.gstat4 <- gstat(id = "lime2", formula = lime2 ~ 1, data = as(meuse_sf_NA, "Spatial"), 
                                    set = list(idp = 2)) %>%
   predict(meuse.grid) %>%
-  as_data_frame()
+  as_tibble()
 
 out_NA <- idw_tidy(data = select(meuse_sf_NA,lime2), newdata=meuse.grid_sf)
 out_NA
@@ -262,7 +266,7 @@ profvis(idw_tidy(data = select(meuse_sf, zinc), newdata=meuse.grid_sf, D=D))
 ##
 W <- idw_getW(data = select(meuse_sf, zinc), newdata=meuse.grid_sf, D=D)
 W %*% as.matrix(meuse_sf$zinc) %>%
-  as_data_frame()
+  as_tibble()
 
 idw_tidy(data = select(meuse_sf, zinc), newdata=meuse.grid_sf, D=D) %>% select(zinc_pred)
 
