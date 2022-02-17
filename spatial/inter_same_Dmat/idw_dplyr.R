@@ -186,9 +186,8 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
     } else {
       res_li <- lapply(Y_li, no_na_rm)  
     }
-    
+    names(res_li) <- colnames(Y)    
     res <- bind_cols(res_li)
-    colnames(res) <- colnames(Y)
     
   } else {
     

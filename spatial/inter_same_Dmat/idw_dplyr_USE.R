@@ -6,7 +6,6 @@ library(sf)
 library(tidyverse)
 
 
-# source("/home/matifou/Dropbox/GIS_server/r_scripts_gis_general/idw_dplyr.R")
 devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/inter_same_Dmat/idw_dplyr.R")
 
 ################
