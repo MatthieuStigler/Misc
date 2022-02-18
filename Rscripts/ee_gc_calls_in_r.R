@@ -59,6 +59,7 @@ util_check_add_gs <- function(gs_path) {
 
 util_get_gs_path <- function(){
   out <- system("which gsutil", intern=TRUE)
+  if("status" %in% names(attributes(out)) && attr(out, "status")==1) warning("Path not found?")
   out
 }
 
