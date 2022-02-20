@@ -1,5 +1,5 @@
 gs_call_any <- function(x, quiet=TRUE, run=TRUE){
-  
+
   gsi_path <- util_get_gs_path()
   ## call
   call <- paste(gsi_path, x)
@@ -8,18 +8,34 @@ gs_call_any <- function(x, quiet=TRUE, run=TRUE){
 }
 
 
-gc_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE){
-  
+gc_upload <- function(...) {
+  warning("Use rather gs_upload")
+  gs_upload(...)
+}
+
+gs_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE,
+                      cmd = "cp", normalize=FALSE){
+
   gs_path <- util_check_add_gs(gs_path)
-  
+
   ## check file(s) exist
   has_wildcard <- str_detect(basename(local_path), "\\*")
   if(!file.exists(local_path) && !has_wildcard) warning("local_path not found?")
   if(has_wildcard && !dir.exists(dirname(local_path))) warning("basename of local_path not found?")
-  
-  
+
+
   local_path <- str_replace(local_path, "\\.shp$", "\\.\\*")
-  gs_call <- paste("gsutil -m cp", local_path,  gs_path)
+
+  ## Replace spaces
+  if(str_detect(local_path, " ")) {
+    local_path <- paste0("'", local_path, "'")
+  }
+  if(normalize) {
+    local_path <- base::normalizePath(local_path)
+  }
+
+  ##
+  gs_call <- paste("gsutil -m ", cmd, local_path,  gs_path)
   if(!quiet) print(gs_call)
   if(run) system(gs_call, intern=TRUE)
 }
@@ -29,11 +45,11 @@ gs_download <- function(input = "gs://bucket_name/folder/*",
                         quiet=TRUE,
                         cmd = "rsync -r",
                         run=TRUE) {
-  
+
   if(stringr::str_detect(input, "\\*") && stringr::str_detect(cmd, "rsync")) {
     warning("cannot do 'rsync' with wildcard... use rather cp -n !?")
     }
-  
+
   if(stringr::str_detect(output, " ")) output <-  paste0("'", output, "'")
   cmd <- paste0("-m ",  cmd, " ", input, " ", output)
   gs_call_any(cmd, quiet=quiet, run=run)
@@ -43,11 +59,11 @@ gs_download <- function(input = "gs://bucket_name/folder/*",
 gs_check_is_there <- function(path, quiet=TRUE) {
   path <- util_check_add_gs(path)
   gs_call <- paste("ls", path)
-  
+
   out <- gs_call_any(gs_call, quiet=quiet)
-  
+
   stat <- attr(out, "status")
-  res <- ifelse(is.null(stat), TRUE, FALSE) 
+  res <- ifelse(is.null(stat), TRUE, FALSE)
   res
 }
 
@@ -64,7 +80,7 @@ util_get_gs_path <- function(){
 }
 
 util_get_ee_path <- function(){
-  
+
   renviron_path <- Sys.getenv("EARTHENGINE_PYTHON")
   if(renviron_path!="") {
     renviron_path <- stringr::str_replace(renviron_path, "python$", "earthengine")
@@ -79,9 +95,9 @@ util_get_ee_path <- function(){
 
 ###
 ee_call_any <- function(call, quiet=TRUE, run = TRUE){
-  
+
   ee_path <- util_get_ee_path()
-  
+
   ## call
   call_full <- paste(ee_path, call)
   if(!quiet) print(call_full)
@@ -90,18 +106,18 @@ ee_call_any <- function(call, quiet=TRUE, run = TRUE){
 
 
 ee_check_has_asset <- function(ee_id, user_name, quiet=TRUE) {
-  
+
   ee_id_last <- dirname(ee_id)
-  
+
   # call
   ee_call <- paste("ls", ee_id_last)
   out_check <- ee_call_any(ee_call, quiet=quiet)
-  
+
   # ana
   any(stringr::str_detect(out_check, ee_id))
 }
 
-#' @examples 
+#' @examples
 #' util_format_id("test", "samOne")
 #' util_format_id("users/samOne/test")
 #' util_format_id("projects/proj/test")
@@ -112,38 +128,38 @@ util_format_id <- function(ee_id=NULL, user_name=NULL) {
 }
 
 ee_rm <- function(ee_id=NULL, user_name, quiet=TRUE) {
-  
+
   call <- paste("rm",  user_name, sep=" ")
   call <- paste(call, ee_id, sep="/")
-  
+
   ee_call_any(x= call, quiet=quiet)
 }
 
 
-ee_upload <- function(ee_id, 
+ee_upload <- function(ee_id,
                       user_name=NULL,
-                      gs_file, 
+                      gs_file,
                       quiet=TRUE, type=c("table", "image"),
                       delete=TRUE, run=TRUE) {
-  
+
   type <- match.arg(type)
-  
+
   gs_file <- util_check_add_gs(gs_file)
-  
+
   ## clean ee_id
   ee_id
-  
+
   ## check if not already there on ee
   is_there_ee <- ee_check_has_asset(ee_id, user_name, quiet)
   if(delete & is_there_ee) ee_rm(ee_id, user_name, quiet)
-  
+
   ## check if there on gs
   if(!gs_check_is_there(gs_file)) warning("File not there on gs?")
-  
+
   ## upload
   ee_id_clean <- util_format_id(ee_id, user_name )
   call <- paste(" upload ",
-                type, " --asset_id=", 
+                type, " --asset_id=",
                 ee_id_clean,
                 " ", gs_file, sep="")
   out <- ee_call_any(call, run=run, quiet=quiet)
@@ -164,19 +180,19 @@ util_clean_ee_return <- function(out){
 
 util_capt_task <- function(out) {
   out <- util_clean_ee_return(out)
-  
+
   if(!stringr::str_detect(out, "Started upload task with ID")) {
     res <- out
   } else {
     res <- str_replace(out, "Started upload task with ID: ", "")
   }
-  
+
   res
 }
 
 
 if(FALSE){
   gc_upload("../ProtectedAreas/conservation_units_legal_amazon_INPE/conservation_units_legal_amazon_CLEAN.shp",
-            gs_path = "cropins_yield_us/transfer_forest/to_ee", 
+            gs_path = "cropins_yield_us/transfer_forest/to_ee",
             quiet=TRUE)
 }
