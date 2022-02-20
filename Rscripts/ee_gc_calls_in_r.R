@@ -27,11 +27,11 @@ gs_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE,
   local_path <- str_replace(local_path, "\\.shp$", "\\.\\*")
 
   ## Replace spaces
-  if(str_detect(local_path, " ")) {
-    local_path <- paste0("'", local_path, "'")
-  }
   if(normalize) {
     local_path <- base::normalizePath(local_path)
+  }
+  if(str_detect(local_path, " ")) {
+    local_path <- paste0("'", local_path, "'")
   }
 
   ##
