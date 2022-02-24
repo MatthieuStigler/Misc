@@ -19,18 +19,18 @@ gs_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE,
   gs_path <- util_check_add_gs(gs_path)
 
   ## check file(s) exist
-  has_wildcard <- str_detect(basename(local_path), "\\*")
+  has_wildcard <- stringr::str_detect(basename(local_path), "\\*")
   if(!file.exists(local_path) && !has_wildcard) warning("local_path not found?")
   if(has_wildcard && !dir.exists(dirname(local_path))) warning("basename of local_path not found?")
 
 
-  local_path <- str_replace(local_path, "\\.shp$", "\\.\\*")
+  local_path <- stringr::str_replace(local_path, "\\.shp$", "\\.\\*")
 
   ## Replace spaces
   if(normalize) {
     local_path <- base::normalizePath(local_path)
   }
-  if(str_detect(local_path, " ")) {
+  if(stringr::str_detect(local_path, " ")) {
     local_path <- paste0("'", local_path, "'")
   }
 
@@ -107,10 +107,12 @@ ee_call_any <- function(call, quiet=TRUE, run = TRUE){
 
 ee_check_has_asset <- function(ee_id, user_name, quiet=TRUE) {
 
-  ee_id_last <- dirname(ee_id)
-
+  ee_id_base <- dirname(ee_id)
+  ## if returns just ., this means info is stored in user_name  
+  if(ee_id_base==".") ee_id_base <- user_name
+    
   # call
-  ee_call <- paste("ls", ee_id_last)
+  ee_call <- paste("ls", ee_id_base)
   out_check <- ee_call_any(ee_call, quiet=quiet)
 
   # ana
@@ -140,21 +142,29 @@ ee_upload <- function(ee_id,
                       user_name=NULL,
                       gs_file,
                       quiet=TRUE, type=c("table", "image"),
-                      delete=TRUE, run=TRUE) {
+                      delete=FALSE,
+                      run=TRUE) {
 
   type <- match.arg(type)
 
   gs_file <- util_check_add_gs(gs_file)
 
-  ## clean ee_id
-  ee_id
+  ## check if there on gs
+  if(!gs_check_is_there(gs_file)) warning("File not there on gs?")
 
   ## check if not already there on ee
   is_there_ee <- ee_check_has_asset(ee_id, user_name, quiet)
-  if(delete & is_there_ee) ee_rm(ee_id, user_name, quiet)
+  if(is_there_ee) {
+    if(!quiet) print("Asset already there!")
+    if(delete) {
+      print("Deleting assert first")
+      ee_rm(ee_id, user_name, quiet)
+    } else {
+      if(!quiet) print("Delete first asset with delete=TRUE")
+      return(FALSE)
+    }
+  }
 
-  ## check if there on gs
-  if(!gs_check_is_there(gs_file)) warning("File not there on gs?")
 
   ## upload
   ee_id_clean <- util_format_id(ee_id, user_name )
@@ -184,7 +194,7 @@ util_capt_task <- function(out) {
   if(!stringr::str_detect(out, "Started upload task with ID")) {
     res <- out
   } else {
-    res <- str_replace(out, "Started upload task with ID: ", "")
+    res <- stringr::str_replace(out, "Started upload task with ID: ", "")
   }
 
   res
