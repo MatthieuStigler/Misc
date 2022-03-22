@@ -188,7 +188,7 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
     
     Y_li <- lapply(seq_len(ncol(Y)), function(i) Y[, i])
     if(use_parallel) {
-      on.exit(stopCluster(parallel))
+      # on.exit(stopCluster(parallel))
       res_li <- clusterApplyLB(parallel, Y_li, no_na_rm)
       
     } else {
