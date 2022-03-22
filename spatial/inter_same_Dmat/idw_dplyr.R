@@ -22,6 +22,7 @@ dist_mat_any <- function(data_1, data_2) {
   dists 
 }
 
+#' Main inner function: get weights
 idw_getW <- function (data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, 
                       D=NULL, normalize=TRUE, force = FALSE) {
 
@@ -57,6 +58,12 @@ idw_getW <- function (data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf,
     # sumD = apply(W, 1, function(x) sum(x, na.rm=TRUE))
     sumD = rowSums(W, na.rm=TRUE)
     res <- W/sumD
+    
+    ## handle 0 distance: give equal weight to all inside
+    if(any(D==0)) {
+      rows_0d <- apply(D, 1, \(x) any(x==0))
+      res[rows_0d,] <- t(apply(D[rows_0d,], 1, \(x) 1*(x==0)/sum(x==0)))
+    }
   } else {
     res <- W
   }
@@ -99,12 +106,9 @@ idw_W_y <- function (W, y) {
   W %*% y
 }
 
-idw_do <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL, force=FALSE, y) {
-  W <- idw_getW(data=data, newdata=newdata, idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, D=D, force=force)
-  W %*% y
-}
 
 
+#' High level function
 idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL,
                      na.rm=TRUE, add_name = "pred", force=FALSE,
                      parallel = NULL) {
@@ -239,7 +243,12 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
   final
 }
 
-#' Low-level function
+#' Low-level functions for comparison
+idw_do <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL, force=FALSE, y) {
+  W <- idw_getW(data=data, newdata=newdata, idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, D=D, force=force)
+  W %*% y
+}
+
 idw0_mat <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL, force=FALSE, y) {
   res <- idw_do(data=data, newdata=newdata, idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, D=D, y=y, force=force)
   data.frame(value=res) %>%
