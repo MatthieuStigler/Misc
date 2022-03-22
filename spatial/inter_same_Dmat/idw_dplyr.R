@@ -209,7 +209,7 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
                     envir=.GlobalEnv)
       on.exit(stopCluster(parallel))
       outp_par <- clusterApplyLB(parallel, y_groups, 
-                                   function(i) idw_getW(data=data, newdata=newdata[i,], 
+                                   function(i) idw_getW(data=data, newdata=newdata[i,,drop=FALSE], 
                                                              idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, 
                                                              force= force,
                                                              normalize=normalize,
