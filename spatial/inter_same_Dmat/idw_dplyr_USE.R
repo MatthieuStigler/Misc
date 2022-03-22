@@ -210,8 +210,9 @@ dim(id_math_Y)
 library(parallel)
 cl <- makeForkCluster(2)
 
-id_math_Y_par <- idw_tidy(data = meuse_sf_4, newdata=meuse.grid_sf %>% select(geometry),
-                      parallel = cl)
+id_math_Y_par <- idw_tidy(data = meuse_sf_4,
+                          newdata=meuse.grid_sf %>% select(geometry),
+                          parallel = cl)
 
 
 all.equal(id_math_Y, id_math_Y_par)

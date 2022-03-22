@@ -1,23 +1,23 @@
-library(gstat)
-library(sp)
-library(sf)
-library(tidyverse)
+# library(gstat)
+# library(sp)
+# library(sf)
+# library(tidyverse)
 
 
 
 ## #### gstat classic
 idw0_W = function (data, newdata, y, idp = 2) {
-  s = coordinates(data)
-  s0 = coordinates(newdata)
-  D = spDists(s0, s)
+  s = sp::coordinates(data)
+  s0 = sp::coordinates(newdata)
+  D = sp::spDists(s0, s)
   D
 } 
 
 dist_mat_any <- function(data_1, data_2) {
   if(inherits(data_1, c("SpatialPointsDataFrame", "SpatialPixelsDataFrame"))) {
-    dists <- spDists(coordinates(data_2), coordinates(data_1))
+    dists <- sp::spDists(sp::coordinates(data_2), sp::coordinates(data_1))
   } else {
-    dists <- st_distance(data_2, data_1) 
+    dists <- sf::st_distance(data_2, data_1) 
   }
   dists 
 }
@@ -26,7 +26,7 @@ idw_getW <- function (data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf,
                       D=NULL, normalize=TRUE, force = FALSE) {
 
   if(is.null(D)) D <- dist_mat_any(data, newdata)
-  if (inherits(D, "units")) D <- drop_units(D)
+  if (inherits(D, "units")) D <- units::drop_units(D)
   # D_has_zero <- any(D==0)
   # D_n_zero <- sum(D==0) 
   
@@ -121,18 +121,18 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
   ## select y
   if(inherits(data, "sf")) {
     data_df <- data %>%
-      st_set_geometry(NULL) %>%
-      as_tibble
+      sf::st_set_geometry(NULL) %>%
+      tibble::as_tibble()
   } else {
     data_df <- data
   }
   y_df <- data_df %>%
-    select_if(is.numeric)
+    dplyr::select_if(is.numeric) ## where is not exported.. https://github.com/r-lib/tidyselect/issues/201
   Y <- as.matrix(y_df)
   
   ## Compute D
   if(is.null(D)) {
-    D <- st_distance(newdata, data)
+    D <- sf::st_distance(newdata, data)
   } else {
     if(ncol(D)!=nrow(Y) | nrow(D)!=nrow(newdata)) stop("Issues in dim of D?")
   }
@@ -188,13 +188,17 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
     }
     names(res_li) <- colnames(Y)    
     res <- bind_cols(res_li)
-    
+  
+    ##  No NAs
   } else {
     
     if(use_parallel) {
-      y_groups <- clusterSplit(cl, seq_len(nrow(newdata)) )  #split(n_Y, sort(n_Y%%2))
-      clusterExport(cl=cl, list("data", "D", "newdata", "idp", "force", "nmax", "Y",
-                                "nmin", "maxdist", "normalize")) #                    envir=environment())
+      y_groups <- clusterSplit(parallel, seq_len(nrow(newdata)) )  #split(n_Y, sort(n_Y%%2))
+      clusterExport(cl=parallel, list("data", "D", "newdata", "idp", "force", "nmax", "Y",
+                                "nmin", "maxdist", "normalize"),
+                    envir=environment())
+      clusterExport(cl=parallel, list("idw_getW"),
+                    envir=.GlobalEnv)
       on.exit(stopCluster(parallel))
       outp_par <- clusterApplyLB(parallel, y_groups, 
                                    function(i) idw_getW(data=data, newdata=newdata[i,], 
