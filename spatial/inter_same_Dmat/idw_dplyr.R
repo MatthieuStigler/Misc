@@ -104,11 +104,15 @@ idw_do <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL
   W %*% y
 }
 
+
 idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL,
                      na.rm=TRUE, add_name = "pred", force=FALSE,
                      parallel = NULL) {
   
+  ## check inputs
+  if(inherits(newdata, "sfc")) warning("Better to use a `newdata` of class sf, not sfc")
   
+  ##
   if(!is.null(parallel)) {
     if(!inherits(parallel, "cluster")) stop("'parallel' should be a 'cluster' object")
     require(parallel)
@@ -223,7 +227,9 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
   ## get outputs
   
   # final <- sf:::cbind.sf(newdata, res)
-  if(nrow(newdata) == nrow(res)) {
+  newd_nrow <- nrow(newdata)
+  if(is.null(newd_nrow)) newd_nrow <- length(newdata)
+  if(newd_nrow == nrow(res)) {
     final <- bind_cols(newdata, res)  
   } else {
     warning(paste("nrow newdata (", nrow(newdata), ") not equal to nrow(res)", nrow(res)))
@@ -233,6 +239,7 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
   final
 }
 
+#' Low-level function
 idw0_mat <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL, force=FALSE, y) {
   res <- idw_do(data=data, newdata=newdata, idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, D=D, y=y, force=force)
   data.frame(value=res) %>%
