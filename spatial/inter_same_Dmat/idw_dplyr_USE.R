@@ -212,7 +212,7 @@ cl <- makeForkCluster(2)
 
 id_math_Y_par <- idw_tidy(data = meuse_sf_4,
                           newdata=meuse.grid_sf %>% select(geometry),
-                          parallel = cl)
+                          n_cores=2)
 
 
 all.equal(id_math_Y, id_math_Y_par)
@@ -220,9 +220,9 @@ all.equal(id_math_Y, id_math_Y_par)
 library(microbenchmark)
 
 microbenchmark(nopar  = idw_tidy(data = meuse_sf_4, newdata=meuse.grid_sf %>% select(geometry)),
-               par_2  = idw_tidy(data = meuse_sf_4, newdata=meuse.grid_sf %>% select(geometry), parallel = makeForkCluster(2)),
-               par_4  = idw_tidy(data = meuse_sf_4, newdata=meuse.grid_sf %>% select(geometry), parallel = makeForkCluster(4)),
-               times = 3)
+               par_2  = idw_tidy(data = meuse_sf_4, newdata=meuse.grid_sf %>% select(geometry), n_cores=2),
+               par_4  = idw_tidy(data = meuse_sf_4, newdata=meuse.grid_sf %>% select(geometry), n_cores=4),
+               times = 5)
 
 ##########################
 ## NAs case
