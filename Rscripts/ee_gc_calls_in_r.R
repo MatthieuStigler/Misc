@@ -73,6 +73,7 @@ gs_check_is_there <- function(path, quiet=TRUE) {
 
 util_check_add_gs <- function(gs_path) {
   if(!stringr::str_detect(gs_path, "^gs://")) gs_path <- paste("gs://", gs_path, sep="")
+  if(!stringr::str_detect(gs_path, " ")) gs_path <- paste0("'", gs_path, "'")
   gs_path
 }
 
