@@ -33,6 +33,9 @@ gs_upload <- function(local_path, gs_path, quiet=TRUE, run=TRUE,
   if(stringr::str_detect(local_path, " ")) {
     local_path <- paste0("'", local_path, "'")
   }
+  if(stringr::str_detect(gs_path, " ")) {
+    gs_path <- paste0("'", gs_path, "'")
+  }
 
   ##
   gs_call <- paste("gsutil -m ", cmd, local_path,  gs_path)
@@ -105,7 +108,7 @@ ee_call_any <- function(call, quiet=TRUE, run = TRUE){
 }
 
 
-ee_check_has_asset <- function(ee_id, user_name, quiet=TRUE) {
+ee_check_has_asset <- function(ee_id, user_name, quiet=TRUE, run=TRUE) {
 
   ee_id_base <- dirname(ee_id)
   ## if returns just ., this means info is stored in user_name  
@@ -113,7 +116,7 @@ ee_check_has_asset <- function(ee_id, user_name, quiet=TRUE) {
     
   # call
   ee_call <- paste("ls", ee_id_base)
-  out_check <- ee_call_any(ee_call, quiet=quiet)
+  out_check <- ee_call_any(ee_call, quiet=quiet, run = run)
 
   # ana
   any(stringr::str_detect(out_check, ee_id))
@@ -143,6 +146,7 @@ ee_upload <- function(ee_id,
                       gs_file,
                       quiet=TRUE, type=c("table", "image"),
                       delete=FALSE,
+                      check_ee_asset = TRUE,
                       run=TRUE) {
 
   type <- match.arg(type)
@@ -153,7 +157,11 @@ ee_upload <- function(ee_id,
   if(!gs_check_is_there(gs_file)) warning("File not there on gs?")
 
   ## check if not already there on ee
-  is_there_ee <- ee_check_has_asset(ee_id, user_name, quiet)
+  if(check_ee_asset) {
+    is_there_ee <- ee_check_has_asset(ee_id, user_name, quiet, run=run)
+  } else {
+    is_there_ee <- FALSE
+  }
   if(is_there_ee) {
     if(!quiet) print("Asset already there!")
     if(delete) {
