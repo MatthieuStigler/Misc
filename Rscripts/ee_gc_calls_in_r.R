@@ -73,7 +73,7 @@ gs_check_is_there <- function(path, quiet=TRUE) {
 
 util_check_add_gs <- function(gs_path) {
   if(!stringr::str_detect(gs_path, "^'?gs://")) gs_path <- paste("gs://", gs_path, sep="")
-  if(!stringr::str_detect(gs_path, " ")) gs_path <- paste0("'", gs_path, "'")
+  if(stringr::str_detect(gs_path, " ")) gs_path <- paste0("'", gs_path, "'")
   gs_path
 }
 
@@ -152,10 +152,10 @@ ee_upload <- function(ee_id,
 
   type <- match.arg(type)
 
-  gs_file <- util_check_add_gs(gs_file)
 
   ## check if there on gs
   if(!gs_check_is_there(gs_file)) warning("File not there on gs?")
+  gs_file <- util_check_add_gs(gs_file)
 
   ## check if not already there on ee
   if(check_ee_asset) {
