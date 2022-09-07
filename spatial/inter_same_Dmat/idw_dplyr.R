@@ -111,18 +111,32 @@ idw_W_y <- function (W, y) {
 #' High level function
 idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL,
                      na.rm=TRUE, add_name = "pred", force=FALSE,
-                     parallel = NULL) {
+                     parallel = NULL, n_cores=0, cl = NULL) {
   
   ## check inputs
   if(inherits(newdata, "sfc")) warning("Better to use a `newdata` of class sf, not sfc")
   
   ##
   if(!is.null(parallel)) {
-    if(!inherits(parallel, "cluster")) stop("'parallel' should be a 'cluster' object")
+    warning("Deprectaed, use instead `n_cores` and `cl`") 
     require(parallel)
+    cl <- parallel
+    if(!inherits(parallel, "cluster")) stop("'parallel' should be a 'cluster' object")
     use_parallel <- TRUE
   } else {
     use_parallel <- FALSE
+  }
+  if(n_cores >0) {
+    require(parallel)
+    use_parallel <- TRUE
+    if(is.null(cl)) cl <- parallel::makeForkCluster(n_cores)
+  } else {
+    use_parallel <- FALSE
+  }
+  
+  ## check cluster
+  if(!is.null(cl)) {
+    if(!inherits(cl, "cluster")) stop("'parallel' should be a 'cluster' object")
   }
   
   
@@ -189,7 +203,7 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
     Y_li <- lapply(seq_len(ncol(Y)), function(i) Y[, i])
     if(use_parallel) {
       # on.exit(stopCluster(parallel))
-      res_li <- clusterApplyLB(parallel, Y_li, no_na_rm)
+      res_li <- clusterApplyLB(cl, Y_li, no_na_rm)
       
     } else {
       res_li <- lapply(Y_li, no_na_rm)  
@@ -201,19 +215,22 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
   } else {
     
     if(use_parallel) {
-      y_groups <- clusterSplit(parallel, seq_len(nrow(newdata)) )  #split(n_Y, sort(n_Y%%2))
-      clusterExport(cl=parallel, list("data", "D", "newdata", "idp", "force", "nmax", "Y",
+      y_groups <- clusterSplit(cl, seq_len(nrow(newdata)) )  #split(n_Y, sort(n_Y%%2))
+      if(any(sapply(y_groups, length)==0)) {
+        warning("Too may nodes compared to rows of data")
+      }
+      clusterExport(cl, list("data", "D", "newdata", "idp", "force", "nmax", "Y",
                                 "nmin", "maxdist", "normalize"),
                     envir=environment())
-      clusterExport(cl=parallel, list("idw_getW"),
+      clusterExport(cl, list("idw_getW"),
                     envir=.GlobalEnv)
-      on.exit(stopCluster(parallel))
-      outp_par <- clusterApplyLB(parallel, y_groups, 
+      on.exit(stopCluster(cl))
+      outp_par <- clusterApplyLB(cl, y_groups, 
                                    function(i) idw_getW(data=data, newdata=newdata[i,,drop=FALSE], 
                                                              idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, 
                                                              force= force,
                                                              normalize=normalize,
-                                                             D=D[i, ]) %*% Y)
+                                                             D=D[i,,drop=FALSE]) %*% Y)
       res <- do.call("rbind", outp_par) %>% as_tibble
     } else {
       W <- idw_getW(data=data, newdata=newdata, 
