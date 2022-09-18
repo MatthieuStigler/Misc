@@ -47,13 +47,19 @@ gs_download <- function(input = "gs://bucket_name/folder/*",
                         output,
                         quiet=TRUE,
                         cmd = "rsync -r",
-                        run=TRUE) {
+                        run=TRUE, normalize=FALSE) {
 
   if(stringr::str_detect(input, "\\*") && stringr::str_detect(cmd, "rsync")) {
     warning("cannot do 'rsync' with wildcard... use rather cp -n !?")
     }
 
+  ## output path: clean and eventually normalize
+  if(normalize) {
+    output <- base::normalizePath(output)
+  }
   if(stringr::str_detect(output, " ")) output <-  paste0("'", output, "'")
+  
+  ## run command
   cmd <- paste0("-m ",  cmd, " ", input, " ", output)
   gs_call_any(cmd, quiet=quiet, run=run)
 }
