@@ -7,6 +7,8 @@ ovr_get_overlap <- function(sf, id_var = NULL, unit = "m2") {
     sf <- sf %>% 
       mutate(id_var = row_number())
     id_var <- rlang::quo(id_var)
+  } else {
+    if(anyDuplicated(pull(sf, {{id_var}}))) stop("Duplicated ids found, function will not work correctly")
   }
   
   ## compute intersection
@@ -33,6 +35,7 @@ ovr_get_overlap <- function(sf, id_var = NULL, unit = "m2") {
   ## Compute polygon area for each intersecting ones
   ids_intersecting <- unique(c(inter_df_raw$row_A, inter_df_raw$row_B))
   areas_indiv <- sf %>% 
+    select({{id_var}}) %>% 
     filter({{id_var}} %in% ids_intersecting) %>% 
     mutate(area = st_area(.)%>% units::set_units(unit, mode = "standard"))%>% 
     sf::st_set_geometry(NULL) %>% 
@@ -53,29 +56,10 @@ ovr_get_overlap <- function(sf, id_var = NULL, unit = "m2") {
 ovr_add_group <- function(df_inter){
   
   
-  ## prep data
-  # inter_df_prep <- df_inter %>%
-  #   add_count(row_A, name = "n_A") %>%
-  #   add_count(row_B, name = "n_B")
-  #   filter(!(n_A==1 & n_B==1)) %>%
-  #   # head(5) %>% 
-  #   select(unit_id_A, unit_id_B, starts_with("area_over"), area_A_overlap) %>%
-  #   mutate(name_short = str_sub(unit_id_A, start=6)) %>% 
-  #   arrange(unit_id_A)
-  
-  ## vertex info
-  # inter_df_info <- inter_df_prep %>% 
-  #   group_by(row_A) %>% 
-  #   summarise(n_overlap = n(),
-  #             area_overlap = mean(area_A_overlapped)) %>% 
-  #   ungroup()
-  
   ## convert to igraph
   g <- df_inter %>% 
     relocate(row_A, row_B) %>% 
-    # filter(!(n_A==1 & n_B==1)) %>%
-    igraph::graph_from_data_frame(directed=FALSE)#, vertices = inter_df_info)
-  
+    igraph::graph_from_data_frame(directed=FALSE)
   ## Extract info
   compo <- igraph::components(g)
   tab_group_letters <- tibble::enframe(purrr::map(igraph::groups(compo), ~paste(., collapse = " ")),
@@ -86,7 +70,7 @@ ovr_add_group <- function(df_inter){
   tab_groups <- tibble(id=igraph::V(g)$name,group_num = compo$membership) %>% 
     left_join(tab_group_letters, by = "group_num")
   
-  ##
+  ## Make sure id is as in original df
   if(!is.character(df_inter$row_A)){
     tab_groups <- tab_groups %>% 
       mutate(id = as(id, class(df_inter$row_A)))
@@ -100,8 +84,8 @@ ovr_add_group <- function(df_inter){
 }
 
 
-# ovr_remove_full
 
+# ovr_remove_full
 if(FALSE){
   library(sf)
   library(ggplot2)
@@ -119,7 +103,7 @@ if(FALSE){
   
   M_all <- list(M1, M2, M3, M4, M5, M6, M7, M8, M9)
   pl2 = purrr::map(M_all, ~st_polygon(list(.)))
-  FC <- st_sf(ids = LETTERS[1:length(pl2)], geometry=st_sfc(pl2))
+  FC <- st_sf(ids = LETTERS[1:length(pl2)], geometry=st_sfc(pl2), x=rnorm(length(pl2)))
   
   plot(FC|>st_geometry())
   ggplot(data = FC) +
@@ -136,5 +120,11 @@ if(FALSE){
   
   ## with new id
   df_inter <- ovr_get_overlap(sf=FC, id_var =ids)
-  ovr_add_group(df_inter)  
+  ovr_add_group(df_inter)
+  
+  ## with duplicate id vars, issue!
+  FC_dup <- FC
+  FC_dup$ids[2] <- FC_dup$ids[1]
+  ovr_get_overlap(sf=FC_dup[1:3,])
+  ovr_get_overlap(sf=FC_dup[1:3,], id_var = ids)
 }
