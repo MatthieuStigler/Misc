@@ -1,3 +1,12 @@
+#' Show pairs of overlapping polygons
+#' 
+#' @description This function uses `st_intersection(x,x)` which returns pairs of overlapping polygons. 
+#' 
+#' @param sf the sf object
+#' @param id_var optional variable containing the row identifier
+#' @param unit the unit in which to report the area
+#' @param pre_filter whether to run first `st_intersects` to filter? Should run faster...
+#' @param inter_make_valid whether to repair potentially invalid values
 ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = FALSE,
                                         inter_make_valid = FALSE) {
   
@@ -74,7 +83,11 @@ ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = F
 }
 
 
-
+#' Add the group in which each dyad is,
+#' 
+#' This adds all polygons that (indirectly) overlap
+#' 
+#' @param df_inter the output from `ovr_get_overlap_pairs`
 ovr_add_group <- function(df_inter){
   
   
