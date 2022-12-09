@@ -1,8 +1,19 @@
-ovr_get_overlap <- function(sf, id_var = NULL, unit = "m2") {
+ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = FALSE,
+                                        inter_make_valid = FALSE) {
   
   ## add id var if not there
   # id_var <- rlang::quo(ids)
   
+  ## pre filter
+  if(pre_filter){
+    row_intersect_df <- st_intersects(sf) %>% 
+      as.data.frame() %>% 
+      filter(row.id!=col.id)
+    row_intersect <- sort(unique(unlist(row_intersect_df)))
+    sf <- sf[row_intersect,]
+  }
+  
+  ## add id var if not specified
   if(rlang::quo_is_null(rlang::enquo(id_var))){
     sf <- sf %>% 
       mutate(id_var = row_number())
@@ -16,8 +27,19 @@ ovr_get_overlap <- function(sf, id_var = NULL, unit = "m2") {
   #                            mutate(row_A = 1:n()),
   #                          sf%>% 
   #                            mutate(row_B = 1:n()))
+  
+  ##
+    
+  
+  ## get pairwise intersection
   inter <- st_intersection(select(sf,row_A = {{id_var}}) %>% st_set_agr("constant"),
                            select(sf, row_B = {{id_var}}) %>% st_set_agr("constant"))
+  
+  ##  eventually repair
+  if(inter_make_valid) {
+    inter <- inter %>% 
+      st_make_valid()
+  }
   
   
   ## Compute area of intersect
@@ -107,24 +129,23 @@ if(FALSE){
   
   plot(FC|>st_geometry())
   ggplot(data = FC) +
-    geom_sf(aes(fill = id), alpha = 0.6) +
-    geom_sf_text(aes(label = id))
+    geom_sf(aes(fill = ids), alpha = 0.6) +
+    geom_sf_text(aes(label = ids))
   
   ####
-  ovr_get_overlap(sf=FC)
-  ovr_get_overlap(sf=FC, id_var = ids)
-  
-  ## with default
-  df_inter <- ovr_get_overlap(sf=FC)
-  ovr_add_group(df_inter)  
+  ovr_get_overlap_pairs(sf=FC) %>% 
+    ovr_add_group()
   
   ## with new id
-  df_inter <- ovr_get_overlap(sf=FC, id_var =ids)
+  df_inter <- ovr_get_overlap_pairs(sf=FC, id_var =ids)
   ovr_add_group(df_inter)
-  
+
+  ## pre-select
+  ovr_get_overlap_pairs(sf=FC, pre_filter = TRUE)
+    
   ## with duplicate id vars, issue!
   FC_dup <- FC
   FC_dup$ids[2] <- FC_dup$ids[1]
-  ovr_get_overlap(sf=FC_dup[1:3,])
-  ovr_get_overlap(sf=FC_dup[1:3,], id_var = ids)
+  ovr_get_overlap_pairs(sf=FC_dup[1:3,])
+  ovr_get_overlap_pairs(sf=FC_dup[1:3,], id_var = ids)
 }
