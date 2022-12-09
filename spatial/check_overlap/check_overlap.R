@@ -5,9 +5,9 @@
 #' @param sf the sf object
 #' @param id_var optional variable containing the row identifier
 #' @param unit the unit in which to report the area
-#' @param pre_filter whether to run first `st_intersects` to filter? Should run faster...
+#' @param pre_filter whether to run first `st_intersects` to filter? Recomended as seems always faster...
 #' @param inter_make_valid whether to repair potentially invalid values
-ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = FALSE,
+ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = TRUE,
                                         inter_make_valid = FALSE) {
   
   ## add id var if not there
