@@ -42,7 +42,7 @@ stp_voronoi_polygons <- function(sf, id_col=NULL, buffer_inner=0,...) {
   voro_1_FC <- FC |> 
     sf::st_join(sf_coords |> dplyr::select({{id_col}})) 
   if(nrow(FC)!=nrow(voro_1_FC)) {
-    warning("Intersecting points found, algorithm will not work well")
+    warning("Intersecting polygons found, algorithm will not work well")
   }
   
   ## result might not be valid?

@@ -1,0 +1,89 @@
+---
+title: "README"
+output:
+  html_document:
+    keep_md: yes
+date: "2023-01-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Voronoi tesselation between polygons
+
+In R, `st_voronoi()` only works between points. To make it work between polygons, I implement a simple hack: convert polygons to point, then apply Voronoi, then merge polygons from same units. 
+
+CAUTION: this DOES NOT WORK WELL when polygons are overlapping/touching! 
+
+## Use
+
+```{r cars}
+source("stp_voronoi_polygons.R")
+# source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/voronoi_polygons/stp_voronoi_polygons.R")
+```
+
+Create some data: countries in EU
+
+
+```{r}
+library(dplyr, warn.conflicts = FALSE)
+library(sf)
+library(rnaturalearth)
+
+## Download and project
+all_countries <- rnaturalearth::ne_countries(scale = "small", returnclass = 'sf')|> 
+  dplyr::select(type, admin)  |> 
+  st_transform("epsg:3035")
+
+## filter to some in Europe
+some_countries <- all_countries |> 
+  dplyr::filter(admin %in% c("Italy", "Switzerland", "Ukraine", "Denmark", "Spain",
+                             "Poland", "United Kingdom", "Norway", "Finland", "Greece"))
+```
+
+### Simple use
+
+Works but not well when polygons touch, as for countries:
+
+```{r}
+some_countries_voro <- stp_voronoi_polygons(sf = some_countries, id_col = "admin") |> 
+  st_intersection(st_bbox(some_countries) |> st_as_sfc())
+
+col_alpha <- rgb(0, 0, 255, max = 255, alpha = 50)
+plot(some_countries_voro |> st_geometry())
+plot(some_countries |> st_geometry(), add=TRUE,col=col_alpha)
+```
+
+Result works in general, except for the polygons that are touching.
+
+### Hack: slightly shrink countries (with `st_buffer()`) so that they don't touch
+
+```{r}
+## Shrink
+some_countries_smaller <- some_countries %>% 
+  st_buffer(-1000) %>% 
+  nngeo::st_remove_holes() %>% 
+  st_make_valid()
+
+## Now apply
+some_countries_smaller_voro <- stp_voronoi_polygons(sf = some_countries_smaller, id_col = "admin") |> 
+  st_intersection(st_bbox(some_countries) |> st_as_sfc())
+
+plot(some_countries_smaller_voro |> st_geometry())
+```
+
+### When output has spurious holes: add `buffer_inner`
+
+Sometimes output will contain some holes, those could be produced by making the union of the pointwise-Voronoi polygons. TO handle this, add ing a very small buffer value should be good enough: 
+
+```{r}
+## sometimes need to add some small value before union
+some_countries_smaller_voro_buf <- stp_voronoi_polygons(sf = some_countries_smaller,
+                                                        id_col = "admin", buffer_inner = 1) |> 
+  st_intersection(st_bbox(some_countries) |> st_as_sfc())
+
+plot(some_countries_smaller_voro_buf |> st_geometry())
+plot(some_countries_smaller |> st_geometry(), add=TRUE, col=col_alpha)
+```
+
