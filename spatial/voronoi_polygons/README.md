@@ -8,9 +8,9 @@ date: "2023-01-06"
 
 
 
-# Voronoi tesselatins between polyongs
+# Voronoi tesselation between polygons
 
-In R, `st_voronoi()` only works between points. To make it work between polyongs, I implement a simple hack: convert polygons to point, then apply Voronoi, then merge polygons from same units. 
+In R, `st_voronoi()` only works between points. To make it work between polygons, I implement a simple hack: convert polygons to point, then apply Voronoi, then merge polygons from same units. 
 
 CAUTION: this DOES NOT WORK WELL when polygons are overlapping/touching! 
 
@@ -19,6 +19,7 @@ CAUTION: this DOES NOT WORK WELL when polygons are overlapping/touching!
 
 ```r
 source("stp_voronoi_polygons.R")
+## or use this:
 # source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/voronoi_polygons/stp_voronoi_polygons.R")
 ```
 
@@ -75,7 +76,7 @@ plot(some_countries_voro |> st_geometry())
 plot(some_countries |> st_geometry(), add=TRUE,col=col_alpha)
 ```
 
-![](README_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
+![](README_files/figure-html/plot_first-1.png)<!-- -->
 
 Result works in general, except for the polygons that are touching.
 
@@ -108,7 +109,7 @@ some_countries_smaller_voro <- stp_voronoi_polygons(sf = some_countries_smaller,
 plot(some_countries_smaller_voro |> st_geometry())
 ```
 
-![](README_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
+![](README_files/figure-html/plot_smaller-1.png)<!-- -->
 
 ### When output has spurious holes: add `buffer_inner`
 
@@ -137,5 +138,5 @@ plot(some_countries_smaller_voro_buf |> st_geometry())
 plot(some_countries_smaller |> st_geometry(), add=TRUE, col=col_alpha)
 ```
 
-![](README_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+![](README_files/figure-html/plot_smaller_buf-1.png)<!-- -->
 

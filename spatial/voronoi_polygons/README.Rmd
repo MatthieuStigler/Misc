@@ -20,6 +20,7 @@ CAUTION: this DOES NOT WORK WELL when polygons are overlapping/touching!
 
 ```{r cars}
 source("stp_voronoi_polygons.R")
+## or use this:
 # source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/voronoi_polygons/stp_voronoi_polygons.R")
 ```
 
@@ -46,7 +47,7 @@ some_countries <- all_countries |>
 
 Works but not well when polygons touch, as for countries:
 
-```{r}
+```{r, plot_first}
 some_countries_voro <- stp_voronoi_polygons(sf = some_countries, id_col = "admin") |> 
   st_intersection(st_bbox(some_countries) |> st_as_sfc())
 
@@ -59,7 +60,7 @@ Result works in general, except for the polygons that are touching.
 
 ### Hack: slightly shrink countries (with `st_buffer()`) so that they don't touch
 
-```{r}
+```{r, plot_smaller}
 ## Shrink
 some_countries_smaller <- some_countries %>% 
   st_buffer(-1000) %>% 
@@ -77,7 +78,7 @@ plot(some_countries_smaller_voro |> st_geometry())
 
 Sometimes output will contain some holes, those could be produced by making the union of the pointwise-Voronoi polygons. TO handle this, add ing a very small buffer value should be good enough: 
 
-```{r}
+```{r, plot_smaller_buf}
 ## sometimes need to add some small value before union
 some_countries_smaller_voro_buf <- stp_voronoi_polygons(sf = some_countries_smaller,
                                                         id_col = "admin", buffer_inner = 1) |> 
