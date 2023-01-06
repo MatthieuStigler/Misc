@@ -14,7 +14,8 @@ stp_coord_to_sf <- function(sf) {
 #' @param sf the sf object
 #' @param id_col Name of column containing the polygons id
 #' @param ... passed to `sf::st_voronoi`
-stp_voronoi_polygons <- function(sf, id_col=NULL, ...) {
+#' @param buffer_inner Optional buffer distance to add before st_union() is made, this can prevent holes
+stp_voronoi_polygons <- function(sf, id_col=NULL, buffer_inner=0,...) {
   
   ## Add id col if missing
   if(is.null(id_col)) {
@@ -52,6 +53,7 @@ stp_voronoi_polygons <- function(sf, id_col=NULL, ...) {
   
   ## Now get intersects by poly-id
   voro_1_FC_byID <- voro_1_FC |> 
+    st_buffer(buffer_inner) |>
     dplyr::group_by(across({{id_col}})) |> 
     dplyr::summarise() |> 
     dplyr::ungroup()
@@ -65,21 +67,50 @@ if(FALSE){
   library(rnaturalearth)
   # library(rnaturalearthdata)  
   
-  some_countries <- ne_countries(scale = "small", returnclass = 'sf') |> 
-    dplyr::select(type, admin) |> 
-    dplyr::filter(admin %in% c("Italy", "Switzerland", "Ukraine", "Denmark", "Spain",
-                               "Poland", "United Kingdom", "Norway", "Finland", "Greece")) |> 
+  all_countries <- rnaturalearth::ne_countries(scale = "small", returnclass = 'sf')|> 
+    dplyr::select(type, admin)  |> 
     st_transform("epsg:3035")
   
-  some_countries_Smaller <- some_countries %>% 
-    st_buffer(-1000) %>% 
-    nngeo::st_remove_holes()
+  some_countries <- all_countries |> 
+    dplyr::filter(admin %in% c("Italy", "Switzerland", "Ukraine", "Denmark", "Spain",
+                               "Poland", "United Kingdom", "Norway", "Finland", "Greece"))
   
-  some_countries_voro <- stp_voronoi_polygons(sf = some_countries_Smaller, id_col = "admin") |> 
+  ## When polygons touch, will create some problems
+  some_countries_voro <- stp_voronoi_polygons(sf = some_countries, id_col = "admin") |> 
+    st_intersection(st_bbox(some_countries) |> st_as_sfc())
+  
+  col_alpha <- rgb(0, 0, 255, max = 255, alpha = 50)
+  plot(some_countries_voro |> st_geometry())
+  plot(some_countries |> st_geometry(), add=TRUE,col=col_alpha)
+  
+  ## Solution 1: increase number of points?
+  some_countries_higher <- some_countries %>% 
+    stp_increase_pts(id_col="admin")
+  
+  some_countries_higher_voro <- stp_voronoi_polygons(sf = some_countries_higher, id_col = "admin") |> 
+    st_intersection(st_bbox(some_countries) |> st_as_sfc())
+  
+  plot(some_countries_higher |> st_geometry())
+  plot(some_countries_higher_voro |> st_geometry(), add=TRUE,col=col_alpha)
+  
+  ## Solution 2: reduce overlap?
+  some_countries_smaller <- some_countries %>% 
+    st_buffer(-1000) %>% 
+    nngeo::st_remove_holes() %>% 
+    st_make_valid()
+  
+  some_countries_smaller_voro <- stp_voronoi_polygons(sf = some_countries_Smaller, id_col = "admin") |> 
     st_intersection(st_bbox(some_countries) |> st_as_sfc())
 
-  plot(some_countries_voro |> st_geometry())
-  plot(some_countries_Smaller |> st_geometry(), add=TRUE, col="blue")
+  plot(some_countries_smaller_voro |> st_geometry())
+  
+  ## sometimes need to add some small value before union
+  some_countries_smaller_voro_buf <- stp_voronoi_polygons(sf = some_countries_Smaller,
+                                                      id_col = "admin", buffer_inner = 1) |> 
+    st_intersection(st_bbox(some_countries) |> st_as_sfc())
+  
+  plot(some_countries_smaller_voro_buf |> st_geometry())
+  plot(some_countries_Smaller |> st_geometry(), add=TRUE, col=col_alpha)
   
   ##
   library(tmap)
@@ -90,39 +121,6 @@ if(FALSE){
     tm_fill(col = "MAP_COLORS", alpha = 0.7)
   tmap_leaflet(tm_out)
 }
-
-if(FALSE) {
-  
-tm2 <- voro_1_FC %>% 
-  filter(admin %in% c("Switzerland")) %>% 
-  st_make_valid() %>% 
-  tm_shape()+
-  tm_borders()+
-  tm_fill(col="admin")+
-  tm_shape(sf_coords %>% 
-             filter(admin %in% c("Switzerland", "Italy"))) +
-  tm_dots()+
-  tm_shape(some_countries %>% 
-             filter(admin %in% c("Switzerland", "Italy")))+
-  tm_borders(col="black", lwd=2)
-
-tm2
-tmap_options(check.and.fix = TRUE)
-tmap_leaflet(tm2)
-
-
-CH <- some_countries %>% 
-  filter(admin %in% c("Switzerland", "Italy"))
-
-stp_increase_pts(CH)
-
-plot(stp_coord_to_sf(CH))
-plot(stp_coord_to_sf(stp_increase_pts(CH)), add=TRUE)
-plot(CH)
-
-st_line_sample(CH %>% st_cast("MULTILINESTRING") %>% st_geometry(), n=100)
-}
-
 
 
 #' Increase points along polygon
@@ -155,16 +153,18 @@ stp_increase_pts <- function(sf=CH, id_col, multiplier=3) {
   sf_lines_samp_full <- purrr::map2(sf_lines_samp,
                                     st_geometry(sf_lines),
                                     ~st_multipoint(rbind(as.matrix(.x), as.matrix(.y)))) %>% 
-    st_sfc()
+    st_sfc() 
   
   ## back as FC
   sf_lines_samp_full %>% 
     st_cast("POLYGON") %>% 
     st_sf() %>% 
+    st_make_valid() %>% 
     dplyr::mutate({{id_col}} := dplyr::pull(sf_lines, {{id_col}})) %>% 
     dplyr::group_by(across({{id_col}})) |> 
     dplyr::summarise() |> 
-    dplyr::ungroup()
+    dplyr::ungroup() %>% 
+    st_set_crs(st_crs(sf))
   
 }
 
