@@ -92,6 +92,18 @@ eegfw_quick_process <- function(ee){
     tidyr::unnest(table)
 }
 
+eegfw_process_task <- function(path){
+  
+  ## read
+  read_raw <- jsonlite::fromJSON(path)
+  
+  ## process
+  prop_dfrt_Han_raw$features$properties %>% 
+    as_tibble() %>% 
+    unnest(table) 
+  
+}
+
 ## example
 if(FALSE){
   library(rgee)
