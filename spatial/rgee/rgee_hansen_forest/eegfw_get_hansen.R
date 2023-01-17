@@ -1,7 +1,3 @@
-# ee_Initialize(user = 'MatthieuStigler@gmail.com', gcs = FALSE, drive = FALSE)
-
-
-
 #' Create mask from datamask and treecover
 #' 
 #' @param treecover2000_param The value at whcih to cut. Set to 0 to keep all
