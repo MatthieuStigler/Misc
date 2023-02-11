@@ -1,3 +1,5 @@
+#' code hosted in: https://github.com/MatthieuStigler/Misc/tree/master/spatial/rgee/rgee_hansen_forest
+
 #' Create mask from datamask and treecover
 #' 
 #' @param treecover2000_param The value at whcih to cut. Set to 0 to keep all
