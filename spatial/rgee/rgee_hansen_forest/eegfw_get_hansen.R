@@ -100,7 +100,7 @@ eegfw_process_task <- function(path){
   read_raw <- jsonlite::fromJSON(path)
   
   ## process
-  prop_dfrt_Han_raw$features$properties %>% 
+  read_raw$features$properties %>% 
     as_tibble() %>% 
     unnest(table) 
   
