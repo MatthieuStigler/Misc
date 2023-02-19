@@ -7,6 +7,9 @@
 #' @param unit the unit in which to report the area
 #' @param pre_filter whether to run first `st_intersects` to filter? Recommended as seems always faster...
 #' @param inter_make_valid whether to repair potentially invalid values
+#' @returns a tibble where each row represents an overlapping A-B dyad, 
+#" and columns indicate the id of the dyad, the area of each polygon, their interscetion and 
+#' percentage of overlap
 ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = TRUE,
                                         inter_make_valid = FALSE) {
   
