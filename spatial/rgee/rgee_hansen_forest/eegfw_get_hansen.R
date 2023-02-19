@@ -88,10 +88,10 @@ eegfw_quick_process <- function(ee){
   
   ## table parse
   ee %>% 
-    dplyr::mutate(table = purrr::map(table, jsonlite::fromJSON)) %>% 
+    dplyr::mutate(table = purrr::map(table, ~purrr::map_dfr(., jsonlite::fromJSON))) %>% 
     st_set_geometry(NULL) %>%
     tibble::as_tibble() %>% 
-    tidyr::unnest(table)
+    tidyr::unnest(table, keep_empty = TRUE)
 }
 
 eegfw_process_task <- function(path){
