@@ -91,7 +91,8 @@ ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = T
 #' This adds all polygons that (indirectly) overlap
 #' 
 #' @param df_inter the output from `ovr_get_overlap_pairs`
-ovr_add_group <- function(df_inter){
+#' @param simplify_group_key Should the group key be simplifed ?
+ovr_add_group <- function(df_inter, simplify_group_key=FALSE){
   
   
   ## convert to igraph
@@ -116,12 +117,63 @@ ovr_add_group <- function(df_inter){
   }
   
   ## add back to data
-  df_inter %>% 
+  res <- df_inter %>% 
     left_join(tab_groups %>% select(id, group, group_n_units), by = c("row_A"="id")) %>% 
     relocate(group, group_n_units, .after = "dyad")
+     
+  ## eventually substitue key
+  if(simplify_group_key){
+    new_kwys <- res %>% 
+      distinct(group) %>% 
+      mutate(group_id= intrnl_sub_key(n()))
     
+    res <- res %>% 
+      left_join(new_kwys, by = "group") %>% 
+      select(-group) %>% 
+      relocate(group=group_id, .after = dyad)
+    
+  }
+  res
 }
 
+#' Get df of poly-id group
+#' @param df output of ovr_add_group
+#' @param var_keep group-specific variables in df to keep
+ovr_groups_to_long <- function(df, var_keep=NULL){
+  df %>% 
+    select(group, group_n_units, row_A, row_B, {{var_keep}}) %>% 
+    tidyr::gather(remove_me, poly_id, row_A, row_B) %>% 
+    select(-remove_me) %>% 
+    distinct() %>% 
+    relocate(poly_id) %>% 
+    arrange(group, poly_id)
+}
+
+
+## internal function to get strings
+intrnl_sub_key <- function(N=100){
+  
+  ## get dim
+  pow <- c(1,2,3,4, 5)[which(N <26^c(1,2,3,4, 5))[1]]
+  if(is.na(pow)) stop("Sorry too big")
+  
+  ## create
+  if(pow==1){
+    res <- LETTERS
+  } else if(pow==2){
+    res <- outer(LETTERS, LETTERS, paste, sep = "")
+  } else {
+    L <- replicate(pow, LETTERS, FALSE)
+    res <- apply(expand.grid(L),1,function(x){do.call(paste0, as.list(x))})
+  }
+  res[1:N]
+}
+
+if(FALSE){
+  intrnl_sub_key(5)
+  intrnl_sub_key(50)
+  intrnl_sub_key(700)
+}
 
 
 # ovr_remove_full
@@ -165,4 +217,10 @@ if(FALSE){
   FC_dup$ids[2] <- FC_dup$ids[1]
   ovr_get_overlap_pairs(sf=FC_dup[1:3,])
   ovr_get_overlap_pairs(sf=FC_dup[1:3,], id_var = ids)
+  
+  ##
+  ovr_add_group(df_inter) %>% 
+    ovr_groups_to_long()
+  
+  
 }
