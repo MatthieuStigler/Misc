@@ -103,7 +103,8 @@ ovr_add_group <- function(df_inter){
   tab_group_letters <- tibble::enframe(purrr::map(igraph::groups(compo), ~paste(., collapse = " ")),
                          name = "group_num", value = "group") %>% 
     tidyr::unnest(group) %>% 
-    mutate(group_num=as.numeric(group_num))
+    mutate(group_num=as.numeric(group_num), 
+           group_n_units = compo$csize)
     
   tab_groups <- tibble(id=igraph::V(g)$name,group_num = compo$membership) %>% 
     left_join(tab_group_letters, by = "group_num")
@@ -116,8 +117,8 @@ ovr_add_group <- function(df_inter){
   
   ## add back to data
   df_inter %>% 
-    left_join(tab_groups %>% select(id, group), by = c("row_A"="id")) %>% 
-    relocate(group, .after = "dyad")
+    left_join(tab_groups %>% select(id, group, group_n_units), by = c("row_A"="id")) %>% 
+    relocate(group, group_n_units, .after = "dyad")
     
 }
 
