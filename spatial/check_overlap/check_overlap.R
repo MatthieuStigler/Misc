@@ -138,12 +138,14 @@ ovr_add_group <- function(df_inter, simplify_group_key=FALSE){
 
 #' Get df of poly-id group
 #' @param df output of ovr_add_group
+#' @param poly_id Name of the output id var
 #' @param var_keep group-specific variables in df to keep
-ovr_groups_to_long <- function(df, var_keep=NULL){
+ovr_groups_to_long <- function(df, poly_id="poly_id", var_keep=NULL){
   df %>% 
     select(group, group_N, row_A, row_B, {{var_keep}}) %>% 
     tidyr::gather(remove_me, poly_id, row_A, row_B) %>% 
     select(-remove_me) %>% 
+    rename({{poly_id}}:=poly_id) %>% 
     distinct() %>% 
     relocate(poly_id) %>% 
     arrange(group, poly_id)
