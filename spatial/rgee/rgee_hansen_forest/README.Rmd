@@ -1,0 +1,77 @@
+---
+title: "README"
+author: "Matthieu"
+date: "2023-02-11"
+output:
+  html_document:
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Code to get hansen data with rgee
+
+This code simplifies the procedure to get Hansen forest loss data, including an initial step to mask pixels using the `treecover2000` raster layer. 
+
+## Demo
+
+Source script:
+
+```{r}
+devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/rgee/rgee_hansen_forest/eegfw_get_hansen.R")
+```
+
+Load libraries, authenticate:
+
+```{r}
+library(dplyr)
+library(sf)
+library(rgee)
+
+ee_Initialize(user = "XXX", gcs = TRUE)
+```
+
+Create pseudo input polygons:
+
+```{r}
+geom_1 <- ee$Geometry$Polygon(list(list(c(-73.83, 2.43) ,c(-73.83, 2.02),
+                                        c(-73.14, 2.02),c(-73.14, 2.43))))
+geom_2 <- ee$Geometry$Polygon(list(list(c(-73.72, 1.86) ,c(-73.72, 1.54),
+                                        c(-72.88, 1.54), c(-72.88, 1.86))))
+FC = ee$FeatureCollection(list(ee$Feature(geom_1, list(id="A")),
+                               ee$Feature(geom_2, list(id="B"))))
+ee_as_sf(FC)
+```
+
+
+
+### Run without mask:
+
+```{r}
+out_EE <- eegfw_get_dfrt(FC = FC)
+eegfw_quick_process(ee=out_EE)
+```
+
+## Run with mask
+
+```{r}
+mask_90 <- eegfw_get_mask()
+out_mask_EE <- eegfw_get_dfrt(FC = FC, mask =mask_90)
+eegfw_quick_process(ee=out_mask_EE)
+```
+
+Eventually, export task:
+
+```{r, eval=FALSE}
+## Try export
+ee_table_to_gcs(
+  collection=coll_out,
+  description = desc,
+  bucket = ,###,
+  fileNamePrefix = name,
+  timePrefix = FALSE,
+  fileFormat = "geojson")
+```
+
