@@ -105,7 +105,7 @@ ovr_add_group <- function(df_inter, simplify_group_key=FALSE){
                          name = "group_num", value = "group") %>% 
     tidyr::unnest(group) %>% 
     mutate(group_num=as.numeric(group_num), 
-           group_n_units = compo$csize)
+           group_N = compo$csize)
     
   tab_groups <- tibble(id=igraph::V(g)$name,group_num = compo$membership) %>% 
     left_join(tab_group_letters, by = "group_num")
@@ -118,8 +118,8 @@ ovr_add_group <- function(df_inter, simplify_group_key=FALSE){
   
   ## add back to data
   res <- df_inter %>% 
-    left_join(tab_groups %>% select(id, group, group_n_units), by = c("row_A"="id")) %>% 
-    relocate(group, group_n_units, .after = "dyad")
+    left_join(tab_groups %>% select(id, group, group_N), by = c("row_A"="id")) %>% 
+    relocate(group, group_N, .after = "dyad")
      
   ## eventually substitue key
   if(simplify_group_key){
@@ -141,7 +141,7 @@ ovr_add_group <- function(df_inter, simplify_group_key=FALSE){
 #' @param var_keep group-specific variables in df to keep
 ovr_groups_to_long <- function(df, var_keep=NULL){
   df %>% 
-    select(group, group_n_units, row_A, row_B, {{var_keep}}) %>% 
+    select(group, group_N, row_A, row_B, {{var_keep}}) %>% 
     tidyr::gather(remove_me, poly_id, row_A, row_B) %>% 
     select(-remove_me) %>% 
     distinct() %>% 
