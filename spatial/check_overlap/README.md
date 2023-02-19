@@ -77,7 +77,7 @@ ggplot(data = FC) +
   geom_sf_text(aes(label = ids))
 ```
 
-![](README_files/figure-html/cars-1.png)<!-- -->
+![](README_files/figure-html/fig_data_raw-1.png)<!-- -->
 
 Use now the function:
 

@@ -63,7 +63,7 @@ FC <- st_sf(ids = LETTERS[1:length(pl2)], geometry=st_sfc(pl2), x=rnorm(length(p
 
 Plot the demo data:
 
-```{r cars}
+```{r fig_data_raw}
 ggplot(data = FC) +
   geom_sf(aes(fill = ids), alpha = 0.6) +
   geom_sf_text(aes(label = ids))
