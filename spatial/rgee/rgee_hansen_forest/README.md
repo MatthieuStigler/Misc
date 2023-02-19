@@ -23,51 +23,19 @@ devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/mas
 ```
 
 ```
-## ℹ SHA-1 hash of file is "bdbfef9b2e6b7c6a3a97c415af8bf0b26edfb894"
+## ℹ SHA-1 hash of file is "1e6ce23c19917b99aef779e7cc3a73d371bc51c8"
 ```
 
 Load libraries, authenticate:
 
 
 ```r
-library(dplyr)
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-```
-
-```
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-```
-
-```
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
+library(dplyr, warn.conflicts = FALSE)
 library(sf)
 ```
 
 ```
-## Linking to GEOS 3.10.2, GDAL 3.0.4, PROJ 6.3.1; sf_use_s2() is TRUE
-```
-
-```
-## WARNING: different compile-time and runtime versions for GEOS found:
-```
-
-```
-## Linked against: 3.10.2-CAPI-1.16.0 compiled against: 3.8.0-CAPI-1.13.1
-```
-
-```
-## It is probably a good idea to reinstall sf, and maybe rgeos and rgdal too
+## Linking to GEOS 3.10.2, GDAL 3.4.3, PROJ 8.2.0; sf_use_s2() is TRUE
 ```
 
 ```r
@@ -78,7 +46,7 @@ ee_Initialize(user = "XXX", gcs = TRUE)
 
 ```
 ## ── rgee 1.1.5 ─────────────────────────────────────── earthengine-api 0.1.339 ── 
-##  ✔ user: XXX
+##  ✔ user: XXX 
 ##  ✔ GCS credentials:
  ✔ GCS credentials:  FOUND
 ##  ✔ Initializing Google Earth Engine:
@@ -86,10 +54,6 @@ ee_Initialize(user = "XXX", gcs = TRUE)
 ## 
  ✔ Earth Engine account: users/XXX 
 ## ────────────────────────────────────────────────────────────────────────────────
-```
-
-```r
-# ee_Initialize(gcs = TRUE)
 ```
 
 Create pseudo input polygons:
