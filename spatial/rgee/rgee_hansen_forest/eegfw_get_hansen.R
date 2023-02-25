@@ -16,7 +16,7 @@ eegfw_get_mask <- function(treecover2000_param =90){
 }
 
 #' @param scale
-eegfw_get_dfrt <- function(FC, mask= NULL, scale =30){
+eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE){
   
   # Hansen data
   gfw <- ee$Image('UMD/hansen/global_forest_change_2021_v1_9')
@@ -57,13 +57,23 @@ eegfw_get_dfrt <- function(FC, mask= NULL, scale =30){
   other_vars <- as.list(vars_image %>% purrr::discard(~stringr::str_detect(., "area$|lossyear$")))
   
   ## map reducers
-  out <- FC$map(function(feature){
+  res_out <- FC$map(function(feature){
     ## grouped reducer: area by lossyear
-    out = pixel_area_forest$select(list("area", "lossyear"))$reduceRegion(
+    out_histo = pixel_area_forest$select(list("area", "lossyear"))$reduceRegion(
       reducer= ee$Reducer$sum()$group(1, "lossyear"),
       geometry= feature$geometry(),
       scale= 30,
-      maxPixels= 10e12)
+      maxPixels= 10e12)$get("groups")
+    
+    ## ensure that polygons without values are still returned
+    if(ensure_empty){
+      empty_list <-  ee$Dictionary$fromLists(list("lossyear", "sum"),
+                                             ee$List$`repeat`(-999, 2))
+      out_histo <- ee$List(out_histo)$
+        map(ee_utils_pyfunc(function(x)  ee$Dictionary(x)$combine(empty_list, FALSE)))
+      warning("Not working!?")
+    }
+    
     ## reducer: recompute pixel area and mask
     simple_sum_others = pixel_area_forest$select(other_vars)$
       multiply(pixel_area_forest$select("area"))$
@@ -72,11 +82,14 @@ eegfw_get_dfrt <- function(FC, mask= NULL, scale =30){
         geometry= feature$geometry(),
         scale= scale,
         maxPixels= 10e12)
-    return(feature$set("table", out$get("groups"))$
-             set(simple_sum_others)$
-             setGeometry(NULL))
+    ## return
+    res_internal <- feature$
+      set(simple_sum_others)$
+      set("table", out_histo)$
+      setGeometry(NULL)
+    return(res_internal)
   })
-  out
+  res_out
 }
 
 
