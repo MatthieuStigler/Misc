@@ -30,4 +30,65 @@ The function: `idw_tidy()`. A bunch of arguments:
 
 # Demo
 
-See the other file *idw_dplyr_USE.R*
+See the other file *idw_dplyr_USE.R* for a full demo.
+
+Here we illustrate how to handle multiple variables:
+
+```{r}
+library(gstat)
+library(sp)
+library(sf)
+library(dplyr)
+library(purrr)
+
+devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/inter_same_Dmat/idw_dplyr.R")
+
+
+################################
+#'## Load data
+################################
+
+data(meuse)
+coordinates(meuse) = ~x+y
+data(meuse.grid)
+gridded(meuse.grid) = ~x+y
+meuse_sf <- st_as_sf(meuse)
+meuse.grid_sf <- st_as_sf(meuse.grid) |> select(geometry)
+
+
+################################
+#'## Simple use
+################################
+
+idw_tidy(data = meuse_sf  |> select(cadmium),
+         newdata = meuse.grid_sf) |>
+  head()
+
+
+################################
+#'## Use with many variables
+################################
+
+
+out_multi_tidy <- idw_tidy(data = meuse_sf  |> select(cadmium, copper, lead, zinc),
+                      newdata = meuse.grid_sf) |>
+  st_set_geometry(NULL)
+
+head(out_multi_tidy)
+
+### gstat way
+get_dat <- function(var){
+  out <- gstat(id = var, formula = as.formula(paste(var, "~ 1")), data = meuse) |> 
+    predict(meuse.grid) 
+  out2 <- out@data
+  rownames(out2) <- NULL
+  out2[,1,drop=FALSE]
+}
+  
+out_multi_gstat <- purrr::map_dfc(c("cadmium", "copper", "lead", "zinc"),
+    get_dat)
+
+## Compare both ways
+all.equal(out_multi_tidy, out_multi_gstat, check.attributes=FALSE)
+```
+
