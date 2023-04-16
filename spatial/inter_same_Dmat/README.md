@@ -9,7 +9,7 @@ output:
 
 
 
-# Goal: Interpolating values
+# R script to interpolate values ina  tidy way, reusing the distance matrix
 
 This is a script I write some time ago. Objective was to extend `gstat::idw0()`:
 
