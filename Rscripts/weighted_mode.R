@@ -1,4 +1,12 @@
+#' ---
+#' Title: "Functions to compute the weighted mode"
+#' Author: "Matthieu"
+#' Date: 2023-04-20
+#' runMat: TRUE
+#' ---
 
+
+## Using tidyverse
 weighted_mode_tidy <- function(x, w){
   tibble::tibble(x=x, w=w) |>
     dplyr::group_by(x) |>
@@ -8,7 +16,7 @@ weighted_mode_tidy <- function(x, w){
     head(1) ## for ties
 }
 
-# 
+# Using base, handle NAs
 weighted_mode_base <- function(x, w){
   x_f <- factor(x, exclude = NULL)
   df <- aggregate(w, list(group=x_f), sum, na.rm=TRUE)
@@ -22,13 +30,16 @@ weighted_mode_base <- function(x, w){
 }
 
 
-## NO NAs
+# Using base, no NAs
 weighted_mode_base_simple <- function(x, w){
+  if(anyNA(x)) {warning("NA not properly handled"); return(NA)}
   df <- aggregate(w, list(group=x), sum, na.rm=TRUE)
   which_max <- which.max(df[,2])
   df[which_max, "group", drop=TRUE]
 }
 
+
+# C++ code, no NAs
 Rcpp::cppFunction('double weightedmodeclow(NumericVector x, NumericVector w){
   NumericVector xunique = Rcpp::unique(x).sort();
   Rcpp::NumericVector tmpvec(xunique.length());
@@ -49,43 +60,76 @@ Rcpp::cppFunction('double weightedmodeclow(NumericVector x, NumericVector w){
 ')
 
 weighted_mode_c <- function(x, w){
-  if(anyNA(x)) return(NA)
+  if(anyNA(x)) {warning("NA not properly handled"); return(NA)}
   if(anyNA(w)) w[is.na(w)] <- 0
   weightedmodeclow(x,w)
 }
 
 
-do_all <- function(x,w){
-  tidy= weighted_mode_tidy(x,w)
-  base= weighted_mode_base(x,w)
-  base_simple= weighted_mode_base_simple(x,w)
-  c= weighted_mode_c(x,w)
-  c(base=isTRUE(all.equal(tidy, base)),
-    base_simple=isTRUE(all.equal(tidy, base_simple)),
-    c=isTRUE(all.equal(tidy, c)))
-}
+
+
+################################
+#'## Example
+################################
 
 if(FALSE){
+  x <- c(1,2,2)
+  w <- c(1,2,3)
   
-
-x <- c(1,2,2)
-w <- c(1,2,3)
-
-df <- tibble::tribble(
-  ~x, ~w,
-  x,w,
-  c(1,2,2), c(1,2,NA),
-  c(1,2), c(1,2),
-  c(1,2,NA), c(1,2,5)
-)
-
-
-df |> 
-  dplyr::mutate(test = purrr::map2_lgl(x,w, ~all(do_all(.x, .y))))
-
+  weighted_mode_tidy(x,w)
+  weighted_mode_c(x,w)
+  
+  ## only 2 handle NAs in x:
+  weighted_mode_tidy(x=c(1,2,NA),w)
+  weighted_mode_tidy(x=c(1,NA,3),w)
+  weighted_mode_base(x=c(1,2,NA),w)
+  
+  ## the other ones give wrong results:
+  weighted_mode_c(x=c(1,2,NA),w=c(5,1,2))
+  weighted_mode_base_simple(x=c(1,2,NA),w=c(5,1,2))
 }
 
-if(FALSE){
+################################
+#'## Test equivalence
+################################
+
+.test <- FALSE
+if(.test){
+  
+  
+  x <- c(1,2,2)
+  w <- c(1,2,3)
+  
+  df <- tibble::tribble(
+    ~x, ~w,
+    x,w,
+    c(1,2,2), c(1,2,NA),
+    c(1,2), c(1,2),
+    c(1,2,NA), c(1,2,5)
+  )
+  ## function to cpmapre
+  do_all <- function(x,w){
+    tidy= weighted_mode_tidy(x,w)
+    base= weighted_mode_base(x,w)
+    base_simple= weighted_mode_base_simple(x,w)
+    c= weighted_mode_c(x,w)
+    c(base=isTRUE(all.equal(tidy, base)),
+      base_simple=isTRUE(all.equal(tidy, base_simple)),
+      c=isTRUE(all.equal(tidy, c)))
+  }
+  
+  
+  df |> 
+    dplyr::mutate(test = purrr::map2_lgl(x,w, ~suppressWarnings(all(do_all(.x, .y)))))
+  
+}
+
+################################
+#'## Measure speed
+################################
+
+
+if(.test){
   
   x <- c(1,2,2)
   w <- c(1,2,3)
@@ -94,7 +138,7 @@ if(FALSE){
                                  base_simple= weighted_mode_base_simple(x,w),
                                  c= weighted_mode_c(x,w), check = "equal")
   
-  N <- 200
+  N <- 500
   x <- sample(1:3, N, replace = TRUE)
   w <- rnorm(N)
   microbenchmark::microbenchmark(tidy= weighted_mode_tidy(x,w),
