@@ -16,27 +16,26 @@ nc_grid_pts <- st_centroid(nc_grid)
 
 ## visual buffedr
 thresh <- 100000
-# thresh <- 80000
+thresh <- 80000
 nc_points_buf <- nc_points %>% st_buffer(thresh) %>% st_geometry() %>% 
   st_union()
 
-plot(nc_grid)
-plot(nc_points, add=TRUE)
 
 
-st_distance(nc_points, nc_grid)
+st_distance(nc_grid, nc_points) < units::set_units(thresh, "m")
+st_distance(nc_grid_pts, nc_points)< units::set_units(thresh, "m")
 
 ## run gstat on sf objects
 gs_out <- gstat(formula = x ~ 1, data = nc_points, 
                 maxdist = thresh,
                 set = list(idp = 2))
-methods(predict)
 z <- suppressWarnings(predict(gs_out, nc_grid))
 z2 <- suppressWarnings(predict(gs_out, nc_grid_pts))
 z$var1.pred
 z2$var1.pred
 
-plot(z %>% select(var1.pred))
+plot(z %>% st_geometry())
+plot(z %>% select(var1.pred), add=TRUE)
 plot(nc_points, add=TRUE)
 plot(nc_points_buf, add=TRUE)
 plot(nc_grid_pts, add=TRUE)

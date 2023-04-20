@@ -109,12 +109,22 @@ idw_W_y <- function (W, y) {
 
 
 #' High level function
+#' 
+#' @param custom_aggreg a function aggregating Y based on W
 idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NULL,
                      na.rm=TRUE, add_name = "pred", force=FALSE,
-                     parallel = NULL, n_cores=0, cl = NULL) {
+                     parallel = NULL, n_cores=0, cl = NULL,
+                     custom_aggreg = NULL) {
   
   ## check inputs
   if(inherits(newdata, "sfc")) warning("Better to use a `newdata` of class sf, not sfc")
+  
+  ## aggreg fun
+  if(is.null(custom_aggreg)) {
+    aggreg_fun <- function(W, Y) W %*% Y
+  } else {
+    aggreg_fun <- custom_aggreg
+  }
   
   ##
   if(!is.null(parallel)) {
@@ -179,22 +189,21 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
       if(TRUE) {
         y[y_na] <- 0 #Actually not really necessary, more for stability
         D[,y_na] <- Inf # will result in weight of zero
-        W_i <- idw_getW(#data=data, newdata=newdata,  actually won't be used as D provided
-          idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, 
-          force=force,
-          normalize=TRUE,
-          D=D)
-        as.numeric(W_i %*% y)
+        W_i <- idw_getW(idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, 
+                        force=force,
+                        normalize=TRUE,
+                        D=D)
+        as.numeric(aggreg_fun(W_i,y))
       } else {
         y_nona <- y[!y_na]
         D_nona <- D[, !y_na]
         
-        W_i <- idw_getW(#data=data, newdata=newdata,  actually won't be used as D provided
-          idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, 
-          force=force,
-          normalize=TRUE,
-          D=D_nona)
-        as.numeric(W_i %*% y_nona)  
+        W_i <- idw_getW(idp = idp, maxdist=maxdist, nmin=nmin, nmax=nmax, 
+                        force=force,
+                        normalize=TRUE,
+                        #data=data, newdata=newdata,  actually won't be used as D provided
+                        D=D_nona)
+        as.numeric(aggreg_fun(W_i,y_nona))
       }
       
       
@@ -238,7 +247,7 @@ idw_tidy <- function(data, newdata, idp = 2, maxdist=Inf, nmin=0, nmax=Inf, D=NU
                     force= force,
                     normalize=normalize,
                     D=D)
-      res <- as_tibble(W %*% Y)
+      res <- as_tibble(aggreg_fun(W, Y))
     }
   }
   if(!is.null(add_name)) {
