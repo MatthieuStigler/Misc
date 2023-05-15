@@ -232,11 +232,14 @@ meuse_sf_NA <- meuse_sf %>%
   mutate(n_row = 1:n(),
          lime2=ifelse(n_row %in% 1:3, NA, lime))
 
-## gstat way
-gs_out_NA <- meuse.gstat4 <- gstat(id = "lime2", formula = lime2 ~ 1, data = as(meuse_sf_NA, "Spatial"), 
-                                   set = list(idp = 2)) %>%
-  predict(meuse.grid) %>%
-  as_tibble()
+## gstat way: doesn't work anymore
+if(FALSE){
+  
+  gs_out_NA <- meuse.gstat4 <- gstat(id = "lime2", formula = lime2 ~ 1, data = as(meuse_sf_NA, "Spatial"), 
+                                     set = list(idp = 2)) %>%
+    predict(meuse.grid) %>%
+    as_tibble()
+}
 
 out_NA <- idw_tidy(data = select(meuse_sf_NA,lime2), newdata=meuse.grid_sf)
 out_NA
@@ -245,6 +248,8 @@ out_NA
 ##########################
 ## Profile
 ##########################
+if(FALSE){
+  
 library(profvis)
 library(microbenchmark)
 
@@ -272,3 +277,5 @@ idw_tidy(data = select(meuse_sf, zinc), newdata=meuse.grid_sf, D=D) %>% select(z
 
 
 profvis(idw_getW(data = select(meuse_sf, zinc), newdata=meuse.grid_sf, D=D), interval = 0.005)
+
+}
