@@ -375,3 +375,13 @@ idw_tidy_way <- function(data, newdata, idp=2, nmax=Inf, nmin=0, maxdist=Inf){
 # # rank(c(3, 2, 1, 1), ties.method = "min")
 # # rank(c(3, 2, 1, 1, 1))
 # # rank(c(3, 2, 1, 1, 1, 1))
+
+
+################################
+#'## mode
+################################
+
+#' custom mode aggregation
+#' 
+#' TO be used as input to argument `custom_aggreg`
+idw_aggreg_mode <- function(W, Y) apply(Y, 2, \(y_col) apply(W, 1, \(w_row) weighted_mode_base_simple(y_col, w_row)))
