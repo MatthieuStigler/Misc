@@ -59,11 +59,28 @@ Rcpp::cppFunction('double weightedmodeclow(NumericVector x, NumericVector w){
 };
 ')
 
-weighted_mode_c <- function(x, w){
-  if(anyNA(x)) {warning("NA not properly handled"); return(NA)}
+weighted_mode_c <- function(x, w, na_tmp_val= -999){
+  
+  ## Trick with NA: replace by na_tmp_val
+  if(anyNA(x)) {
+    x_has_NA <- TRUE
+    if(na_tmp_val %in% x) stop("Use another 'na_tmp_val' value")
+    x[is.na(x)] <- na_tmp_val
+  } else {
+    x_has_NA <- FALSE
+  }
   if(anyNA(w)) w[is.na(w)] <- 0
-  weightedmodeclow(x,w)
+  
+  ## res
+  res <- weightedmodeclow(x,w)
+  
+  ## NA trick: re-replace
+  if(x_has_NA & res ==na_tmp_val) res <- NA
+  
+  res
+  
 }
+
 
 
 
@@ -81,11 +98,17 @@ if(FALSE){
   
   ## only 2 handle NAs in x:
   weighted_mode_tidy(x=c(1,2,NA),w)
-  weighted_mode_tidy(x=c(1,NA,3),w)
   weighted_mode_base(x=c(1,2,NA),w)
+  weighted_mode_c(x=c(1,2,NA),w)
+  
+  weighted_mode_tidy(x=c(1,NA,3),w)
+  weighted_mode_base(x=c(1,NA,3),w)
+  weighted_mode_c(x=c(1,NA,3),w)
+  
+  ## check we don't use an actual value:
+  weighted_mode_c(x=c(1,NA,3),w, na_tmp_val = 3)
   
   ## the other ones give wrong results:
-  weighted_mode_c(x=c(1,2,NA),w=c(5,1,2))
   weighted_mode_base_simple(x=c(1,2,NA),w=c(5,1,2))
 }
 
