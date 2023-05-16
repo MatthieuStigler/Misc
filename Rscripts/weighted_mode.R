@@ -105,6 +105,18 @@ if(FALSE){
   weighted_mode_base(x=c(1,NA,3),w)
   weighted_mode_c(x=c(1,NA,3),w)
   
+  ## problem when all weights NA/0?
+  w_0 <- c(0, 0,0)
+  w_NA <- c(NA, NA, NA)
+  weighted_mode_tidy(x=c(1,2,NA),w_0)
+  weighted_mode_tidy(x=c(1,2,NA),w_NA)
+  
+  weighted_mode_base(x=c(1,2,NA), w_0)
+  weighted_mode_base(x=c(1,2,NA), w_NA)
+  
+  weighted_mode_c(x=c(1,2,NA), w_0)
+  weighted_mode_c(x=c(1,2,NA), w_NA)
+  
   ## check we don't use an actual value:
   weighted_mode_c(x=c(1,NA,3),w, na_tmp_val = 3)
   
