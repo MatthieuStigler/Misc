@@ -2,11 +2,11 @@
 
 #' Create mask from datamask and treecover
 #' 
-#' @param treecover2000_param The value at whcih to cut. Set to 0 to keep all
-eegfw_get_mask <- function(treecover2000_param =90){
+#' @param treecover2000_param The value at which to cut. Set to 0 to keep all
+eegfw_get_mask <- function(treecover2000_param =90, han_version = "UMD/hansen/global_forest_change_2022_v1_10"){
   
   # Load Hansen data
-  gfw <- ee$Image('UMD/hansen/global_forest_change_2021_v1_9')
+  gfw <- ee$Image(han_version)
   
   han_datamask <- gfw$select('datamask')$eq(1)
   han_2000_mask <- gfw$select('treecover2000')$gt(treecover2000_param)
@@ -16,10 +16,11 @@ eegfw_get_mask <- function(treecover2000_param =90){
 }
 
 #' @param scale
-eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE){
+eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
+                           han_version = "UMD/hansen/global_forest_change_2022_v1_10"){
   
   # Hansen data
-  gfw <- ee$Image('UMD/hansen/global_forest_change_2021_v1_9')
+  gfw <- ee$Image(han_version)
   
   ## 
   target_im <- if(!is.null(mask)) mask else gfw
@@ -29,13 +30,13 @@ eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE){
   ## Create area image, rescaling to square km from square m
   pixel_area_img = ee$Image$pixelArea()$divide(1000000)$rename("area")
   
-  ## eventually reprojject
+  ## eventually reproject
   if(!is.null(mask)) pixel_area_img <- pixel_area_img$reproject(target_proj, scale= target_scale)
   
   ## Create 1 image, for area calculation
   pixel_ones <- ee$Image(1)$rename("area_ee")$reproject(target_proj, scale= target_scale)
   
-  ## select hansen
+  ## select Hansen vars
   hansen_keep <- gfw$select(list("lossyear", "loss"), list("lossyear", "losstotal"))$reproject(target_proj, scale= target_scale)
   
   ## mask
