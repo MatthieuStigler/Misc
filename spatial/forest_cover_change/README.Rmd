@@ -15,6 +15,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 A collection of R scripts to process forest cover data from Hansen or PRODES.
 
+Use with:
+
+```
+source("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/forest_cover_change/frst_forest_cover_change_scripts.R")
+```
+
 ## Conventions & variables names
 
 - `dfrt_year` year
@@ -49,6 +55,8 @@ suppressPackageStartupMessages(library(tidyverse, warn.conflicts = FALSE))
 
 ```{r}
 library(tidyverse, warn.conflicts = FALSE)
+source("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/forest_cover_change/frst_forest_cover_change_scripts.R")
+
 df_test_Han <- tibble(cell_id=rep(c("Normal", "No def", "Full def"), c(3,1, 1)),
                         lossyear = as.integer(c(0,2,3, 0, 5)),
                         area = 10000) %>%   

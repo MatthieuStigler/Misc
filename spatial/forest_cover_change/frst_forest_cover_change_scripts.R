@@ -1,5 +1,5 @@
 ## variable to run testthat test contained in this script
-test_here <- TRUE
+test_here <- FALSE
 if(test_here) library(testthat)
 
 #' ---
