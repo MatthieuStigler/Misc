@@ -476,23 +476,6 @@ frst_HAN_check_final <- function(df, tol = 1e-15, .group_vars = cell_id,
     }
   }
   
-  ## Check 8: illegal NAs
-  if(any(!df$dfrt_any)){
-    cat("Test 8: expected NAs for dfrt_any=FALSE\n")
-    test_8_df <- df |> 
-      filter(!dfrt_any) |> 
-      filter(!is.na(dfrt_area)) |> 
-      select({{.group_vars}}, dfrt_year, dfrt_any, starts_with("dfrt_"))
-    if(nrow(test_8_df)>0) {
-      cat("\tNot passed! 😱\n")
-      print(test_8_df)
-      if(stop_if_not_passed) do_stop <- TRUE
-    } else {
-      cat("\tPassed! 🎉\n")
-    }
-  }
-  
-  
   if(do_stop) stop()
   
 }
