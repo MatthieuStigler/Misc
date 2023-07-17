@@ -17,11 +17,11 @@ A collection of R scripts to process forest cover data from Hansen or PRODES.
 
 Use with:
 
-```
+``` {r, eval=FALSE}
 source("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/forest_cover_change/frst_forest_cover_change_scripts.R")
 ```
 
-## Conventions & variables names
+## Output variables names
 
 - `dfrt_year` year
 - `dfrt_any` unit level: was there any observed deforestation for this unit over the whole sample?
@@ -39,11 +39,30 @@ Forest cover variables:
 - `frst_area_by_tot`: forest cover by unit area (%)
 
 
-Conventions:
+## Conventions:
 
-When there is no initial forest:
+When initial forest ==0:
 
- -
+ - the `dfrt_area_*` variables will be NA
+ 
+When initial forest >0 but there is no deforestation:
+
+- The output of `frst_HAN_process` will contain `dfrt_year` of `NA` (to make sure the observations appears once), but will have `dfrt_area_*` of 0
+- The output of `frst_dfrt_complete` will contain `dfrt_year` with same years as other units
+    
+ 
+
+## Functions
+
+- `frst_HAN_process`: main function
+- `frst_dfrt_complete`: add years without deforestation
+- `frst_HAN_add_frst_cover`: add forest cover
+
+
+Check output:
+
+- `frst_HAN_check_final`: main test
+- `frst_add_forest_check`:
 
 
 ## Example
@@ -52,6 +71,7 @@ When there is no initial forest:
 suppressPackageStartupMessages(library(tidyverse, warn.conflicts = FALSE))
 ```
 
+### Example 1: data does NOT contain unit's area
 
 ```{r}
 library(tidyverse, warn.conflicts = FALSE)
@@ -63,5 +83,39 @@ df_test_Han <- tibble(cell_id=rep(c("Normal", "No def", "Full def"), c(3,1, 1)),
     group_by(cell_id) %>%
     mutate(area_total = sum(area)) %>%
     ungroup()
-df_test_Han
+knitr::kable(df_test_Han)
 ```
+
+
+```{r}
+df_test_Han_prep <- df_test_Han %>% 
+    frst_HAN_process(recompute_forest=TRUE) %>% 
+    frst_dfrt_complete(nest_vars=nesting(cell_id, area_forest_initial, dfrt_any, area_total, area_forest_final),
+                      years_all=2000:2005) 
+df_test_Han_prep
+```
+
+
+### Example 2: data contains unit's area
+
+```{r}
+df_test_Han_2 <- tibble(cell_id=rep(c("Normal", "Zero def", "No deforestable", "some def"), c(3,1, 1,1)),
+                          lossyear = as.integer(c(0,2,3,0,NA,5)),
+                          area = 10000) %>%   
+    group_by(cell_id) %>%
+    mutate(area_total = sum(area)) %>%
+    ungroup() %>% 
+    mutate(area_forest_initial = if_else(is.na(lossyear), 0, area_total))
+
+knitr::kable(df_test_Han_2)
+```
+
+```{r}
+df_test_Han_prep_2 <- df_test_Han_2 %>% 
+    frst_HAN_process(area_mask_forest_var = area_forest_initial) %>% 
+    frst_dfrt_complete(nest_vars=nesting(cell_id, area_forest_initial, dfrt_any, area_total, area_forest_final),
+                      years_all=2000:2005) 
+df_test_Han_prep_2 %>% select(cell_id, area_total, area_forest_initial, dfrt_any, dfrt_year, dfrt_area)
+```
+
+
