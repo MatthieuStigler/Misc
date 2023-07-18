@@ -186,7 +186,7 @@ df_test_Han_prep_2 %>% select(cell_id, area_total, area_forest_initial, dfrt_any
 
 ## Example 3: Hansen data in the Amazonas
 
-Data was process with rgee and is stored on:
+Data was process with rgee and own script in (https://github.com/MatthieuStigler/Misc/tree/master/spatial/rgee/rgee_hansen_forest) and was saved on github:
 
 
 ```r
