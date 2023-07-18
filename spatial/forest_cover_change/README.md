@@ -4,12 +4,13 @@ author: "Matthieu"
 date: "2023-07-17"
 output:
   html_document:
+    toc: true
     keep_md: yes
 ---
 
 
 
-# Forest cover change scripts 
+# Introduction: Forest cover change scripts 
 
 A collection of R scripts to process forest cover data from Hansen or PRODES.
 
@@ -20,7 +21,7 @@ Use with:
 source("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/forest_cover_change/frst_forest_cover_change_scripts.R")
 ```
 
-## Conventions & variables names
+# Output variables names
 
 - `dfrt_year` year
 - `dfrt_any` unit level: was there any observed deforestation for this unit over the whole sample?
@@ -38,7 +39,7 @@ Forest cover variables:
 - `frst_area_by_tot`: forest cover by unit area (%)
 
 
-## Conventions:
+# Conventions:
 
 When initial forest ==0:
 
@@ -47,11 +48,11 @@ When initial forest ==0:
 When initial forest >0 but there is no deforestation:
 
 - The output of `frst_HAN_process` will contain `dfrt_year` of `NA` (to make sure the observations appears once), but will have `dfrt_area_*` of 0
-- The output of `frst_dfrt_complete` will contain `dfrt_year` with same years as other
+- The output of `frst_dfrt_complete` will contain `dfrt_year` with same years as other units
     
  
 
-## Functions
+# Functions
 
 - `frst_HAN_process`: main function
 - `frst_dfrt_complete`: add years without deforestation
@@ -64,11 +65,11 @@ Check output:
 - `frst_add_forest_check`:
 
 
-## Example
+# Example
 
 
 
-### Example 1: data does NOT contain unit's area
+## Example 1: data does NOT contain unit's area
 
 
 ```r
@@ -131,7 +132,7 @@ df_test_Han_prep
 ```
 
 
-### Example 2: data contains unit's area
+## Example 2: data contains unit's area
 
 
 ```r
@@ -183,4 +184,71 @@ df_test_Han_prep_2 %>% select(cell_id, area_total, area_forest_initial, dfrt_any
 ## # ℹ 14 more rows
 ```
 
+## Example 3: Hansen data in the Amazonas
+
+Data was process with rgee and is stored on:
+
+
+```r
+hansen_Amaz_demo <- read_csv("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/forest_cover_change/hansen_raw_amazonas_BRA_from_rgee.csv",
+                             show_col_types = FALSE)
+```
+
+Do full processing:
+
+
+```r
+hansen_Amaz_demo_clean <- hansen_Amaz_demo %>% 
+  frst_HAN_process(area_mask_forest_var = mask_hansen, full_area_var = area_ee, area =sum,
+                   .group_vars = c(ADM0_NAME, ADM1_NAME, ADM2_CODE, ADM2_NAME)) %>% 
+  frst_dfrt_complete(nest_vars=nesting(ADM0_NAME, ADM1_NAME, ADM2_CODE, ADM2_NAME, 
+                                       area_forest_initial, dfrt_any, area_total, area_forest_final)) %>% 
+  frst_add_forest(.group_vars = ADM2_NAME, add_first_year = TRUE) %>% 
+  frst_add_dfrt_annualized(.group_vars = ADM2_NAME)
+```
+
+Check the data, need to use a rather low tolerance to get all tests to pass:
+
+
+```r
+hansen_Amaz_demo_clean %>% 
+  frst_HAN_check_final(.group_vars = ADM2_NAME, tol = 1e-6, has_forest_cover_0_year = TRUE)
+```
+
+```
+## Test 1: no unexpected NAs
+## 	Passed! 🎉
+## Test 2: area_final = area_initial - sum(dfrt_area)
+## 	Passed! 🎉
+## Test 3 A: No NA values if dfrt_any
+## 	Passed! 🎉
+## Test 3 B: if forest_initial =0 THEN NA dfrt_area_*
+## 	Passed! 🎉
+## Test 4: area_* vars are unique at .group_vars level
+## 	Passed! 🎉
+## Test 5: dfrt_area_by_* is correct
+## 	Passed! 🎉
+## Test 6: final forest cover: using frst_add_forest_check()
+## 	Passed! 🎉
+## Test 7: dfrt_any==FALSE <=> area_forest_initial==area_forest_final  
+## 	Passed! 🎉
+```
+
+Plot: turn to long and plot:
+
+
+```r
+hansen_Amaz_demo_clean %>% 
+  gather(dfrt_var, dfrt_value, starts_with(c("dfrt_area", "frst_area"))) %>% 
+  ggplot(aes(x=dfrt_year, y= dfrt_value, group= ADM2_NAME))+
+  geom_line(alpha=0.5)+
+  facet_wrap(~dfrt_var, scales="free", ncol=2)+
+  ggtitle("Municipalities in the Amazonas state, Brazil")
+```
+
+```
+## Warning: Removed 62 rows containing missing values (`geom_line()`).
+```
+
+![](README_files/figure-html/plot_Hansen_facets-1.png)<!-- -->
 

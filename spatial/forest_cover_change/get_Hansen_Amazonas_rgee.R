@@ -4,7 +4,7 @@ library(dplyr, warn.conflicts = FALSE)
 library(sf)
 library(rgee)
 
-## laod script
+## load script
 devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/rgee/rgee_hansen_forest/eegfw_get_hansen.R")
 
 ## initialize rgee
@@ -17,7 +17,7 @@ FC_Amaz = GAUL_L2$filter(ee$Filter$eq("ADM0_NAME", "Brazil"))$filter(ee$Filter$e
 
 ## apply functions
 mask_90 <- eegfw_get_mask()
-out_mask_EE <- eegfw_get_dfrt(FC = FC_Amaz$limit(30), mask =mask_90)
+out_mask_EE <- eegfw_get_dfrt(FC = FC_Amaz, mask =mask_90)
 out <- eegfw_quick_process(ee=out_mask_EE)
 
 ## clean output and save
