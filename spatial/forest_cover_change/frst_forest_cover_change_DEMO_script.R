@@ -1,7 +1,5 @@
 ## load packages
-library(dplyr, warn.conflicts = FALSE)
-library(sf)
-library(rgee)
+library(tidyverse, warn.conflicts = FALSE)
 
 ## load script
 source("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/forest_cover_change/frst_forest_cover_change_scripts.R")
