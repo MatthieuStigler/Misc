@@ -9,7 +9,7 @@ source("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/fo
 hansen_Amaz_demo <- read_csv("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/forest_cover_change/hansen_raw_amazonas_BRA_from_rgee.csv")
 
 
-
+## Full process
 hansen_Amaz_demo_clean <- hansen_Amaz_demo %>% 
   frst_HAN_process(area_mask_forest_var = mask_hansen, full_area_var = area_ee, area =sum,
                    .group_vars = c(ADM0_NAME, ADM1_NAME, ADM2_CODE, ADM2_NAME)) %>% 
@@ -20,12 +20,20 @@ hansen_Amaz_demo_clean <- hansen_Amaz_demo %>%
 
 hansen_Amaz_demo_clean
 
-hansen_Amaz_demo_clean %>% 
-  frst_HAN_check_final(.group_vars = ADM2_NAME, tol = 1e-6, has_forest_cover_0_year = TRUE)
+## check
+if(FALSE){
+  hansen_Amaz_demo_clean %>% 
+    frst_HAN_check_final(.group_vars = ADM2_NAME, tol = 1e-6, has_forest_cover_0_year = TRUE)
+}
 
 ## long over vars
-hansen_Amaz_demo_clean %>% 
-  gather(dfrt_var, dfrt_value, starts_with(c("dfrt_area", "frst_area"))) %>% 
-  ggplot(aes(x=dfrt_year, y= dfrt_value, group= ADM2_NAME))+
-  geom_line(alpha=0.5)+
-  facet_wrap(~dfrt_var, scales="free", ncol=2)
+hansen_Amaz_demo_clean_l <- hansen_Amaz_demo_clean %>% 
+  gather(dfrt_var, dfrt_value, starts_with(c("dfrt_area", "frst_area"))) 
+
+if(FALSE){
+  hansen_Amaz_demo_clean_l%>% 
+    ggplot(aes(x=dfrt_year, y= dfrt_value, group= ADM2_NAME))+
+    geom_line(alpha=0.5)+
+    facet_wrap(~dfrt_var, scales="free", ncol=2)
+
+}
