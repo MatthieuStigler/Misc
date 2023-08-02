@@ -108,7 +108,11 @@ eegfw_quick_process <- function(ee){
     tidyr::unnest(table, keep_empty = TRUE)
 }
 
-eegfw_process_task <- function(path){
+#' Read the Json and process it
+#' 
+#' @param path Path to file 
+#' @param keep_empty should keep empty (masked) objects? Default to TRUE
+eegfw_process_task <- function(path, keep_empty=TRUE){
   
   ## read
   read_raw <- jsonlite::fromJSON(path)
@@ -116,7 +120,7 @@ eegfw_process_task <- function(path){
   ## process
   read_raw$features$properties %>% 
     as_tibble() %>% 
-    unnest(table) 
+    unnest(table, keep_empty=keep_empty) 
   
 }
 
