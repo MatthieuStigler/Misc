@@ -109,16 +109,16 @@ ovr_get_overlap_pairs(sf=FC) %>%
 
 ```
 ## # A tibble: 7 × 10
-##   dyad  group group_n_units row_A row_B area_inter area_A area_B area_…¹ area_…²
-##   <chr> <chr>         <dbl> <int> <int>      [m^2]  [m^2]  [m^2]   <dbl>   <dbl>
-## 1 1 2   1 2 3             3     1     2       99.8    100    100    99.8    99.8
-## 2 1 3   1 2 3             3     1     3        9      100      9     9     100  
-## 3 2 3   1 2 3             3     2     3        9      100      9     9     100  
-## 4 4 5   4 5 6             3     4     5        4        9      9    44.4    44.4
-## 5 4 6   4 5 6             3     4     6        1        9      9    11.1    11.1
-## 6 5 6   4 5 6             3     5     6        4        9      9    44.4    44.4
-## 7 7 8   7 8               2     7     8        3        8      8    37.5    37.5
-## # … with abbreviated variable names ¹​area_A_overlapped, ²​area_B_overlapped
+##   dyad  group group_N row_A row_B area_inter area_A area_B area_A_overlapped
+##   <chr> <chr>   <dbl> <int> <int>      [m^2]  [m^2]  [m^2]             <dbl>
+## 1 1 2   1 2 3       3     1     2       99.8    100    100              99.8
+## 2 1 3   1 2 3       3     1     3        9      100      9               9  
+## 3 2 3   1 2 3       3     2     3        9      100      9               9  
+## 4 4 5   4 5 6       3     4     5        4        9      9              44.4
+## 5 4 6   4 5 6       3     4     6        1        9      9              11.1
+## 6 5 6   4 5 6       3     5     6        4        9      9              44.4
+## 7 7 8   7 8         2     7     8        3        8      8              37.5
+## # ℹ 1 more variable: area_B_overlapped <dbl>
 ```
 
 Optional: specifiy polygons id variable
