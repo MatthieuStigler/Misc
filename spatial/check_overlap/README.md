@@ -24,6 +24,7 @@ Function `ovr_add_group()`  uses `igraph` tools to indicate groups of overlappin
   - @param `pre_filter` whether to run first `st_intersects` to filter? Recommended as seems always
   faster...
   - @param `inter_make_valid` whether to repair potentially invalid values
+  - @param `sf2` NULL. to compare two groups of polygons
   - @returns a tibble where each row represents an overlapping A-B dyad,  and columns indicate the id of the dyad, the area of each polygon, their interscetion and  percentage of overlap
 - `ovr_add_group()`:
   - @param df_inter the output from `ovr_get_overlap_pairs`
@@ -153,4 +154,36 @@ all.equal(ovr_get_overlap_pairs(sf=FC, pre_filter = TRUE, id_var =ids) |> arrang
 ## [1] TRUE
 ```
 
+### Two groups of polygons
+
+In case one only wants to check the overlap between two groups of polygons (i.e. not looking at within-group overlap), one can use the `sf2` argument:
+
+
+```r
+gr_1 <- filter(FC, ids %in% c("D", "E"))
+gr_2 <- filter(FC, ids %in% c("F"))
+gr_12 <- rbind(gr_1, gr_2)
+ovr_get_overlap_pairs(sf=gr_12, id_var =ids)
+```
+
+```
+## # A tibble: 3 × 8
+##   dyad  row_A row_B area_inter area_A area_B area_A_overlapped area_B_overlapped
+##   <chr> <chr> <chr>      [m^2]  [m^2]  [m^2]             <dbl>             <dbl>
+## 1 D E   D     E              4      9      9              44.4              44.4
+## 2 D F   D     F              1      9      9              11.1              11.1
+## 3 E F   E     F              4      9      9              44.4              44.4
+```
+
+```r
+ovr_get_overlap_pairs(sf=gr_1, sf2=gr_2, id_var =ids)
+```
+
+```
+## # A tibble: 2 × 8
+##   dyad  row_A row_B area_inter area_A area_B area_A_overlapped area_B_overlapped
+##   <chr> <chr> <chr>      [m^2]  [m^2]  [m^2]             <dbl>             <dbl>
+## 1 D F   D     F              1      9      9              11.1              11.1
+## 2 E F   E     F              4      9      9              44.4              44.4
+```
 
