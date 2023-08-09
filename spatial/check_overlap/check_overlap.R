@@ -10,19 +10,29 @@
 #' @returns a tibble where each row represents an overlapping A-B dyad,
 #" and columns indicate the id of the dyad, the area of each polygon, their interscetion and
 #' percentage of overlap
-ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = TRUE,
-                                        inter_make_valid = FALSE) {
+ovr_get_overlap_pairs <- function(sf, sf2=NULL, id_var = NULL, unit = "m2", pre_filter = TRUE,
+                                  inter_make_valid = FALSE) {
 
   ## add id var if not there
   # id_var <- rlang::quo(ids)
+  has_sf2 <- !is.null(sf2)
 
   ## pre filter
   if(pre_filter){
-    row_intersect_df <- st_intersects(sf) %>%
-      as.data.frame() %>%
-      filter(row.id!=col.id)
-    row_intersect <- sort(unique(unlist(row_intersect_df)))
-    sf <- sf[row_intersect,]
+    ## one single data
+    if(!has_sf2) {
+      row_intersect_df <- st_intersects(sf) %>%
+        as.data.frame() %>%
+        filter(row.id!=col.id)
+      row_intersect <- sort(unique(unlist(row_intersect_df)))
+      sf <- sf[row_intersect,]
+    ## two datasets
+    } else {
+      row_intersect_df <- st_intersects(sf, sf2) %>%
+        as.data.frame()
+      sf <- sf[unique(row_intersect_df$row.id),]
+      sf2 <- sf2[unique(row_intersect_df$col.id),]
+    }
   }
 
   ## add id var if not specified
@@ -45,8 +55,9 @@ ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = T
 
 
   ## get pairwise intersection
+  if(!has_sf2) sf2 <- sf
   inter <- st_intersection(select(sf,row_A = {{id_var}}) %>% st_set_agr("constant"),
-                           select(sf, row_B = {{id_var}}) %>% st_set_agr("constant"))
+                           select(sf2, row_B = {{id_var}}) %>% st_set_agr("constant"))
 
   ##  eventually repair
   if(inter_make_valid) {
@@ -64,12 +75,15 @@ ovr_get_overlap_pairs <- function(sf, id_var = NULL, unit = "m2", pre_filter = T
     mutate(dyad = purrr::map2_chr(row_A, row_B, ~paste(sort(c(.x, .y)), collapse = " "))) %>%
     relocate(dyad) %>%
     group_by(dyad) %>%
-    slice(2) %>%
+    ## want either second (ordered) or first
+    slice(if(has_sf2) 1 else 2) %>%
     ungroup()
 
   ## Compute polygon area for each intersecting ones
   ids_intersecting <- unique(c(inter_df_raw$row_A, inter_df_raw$row_B))
+  if(has_sf2) sf <- rbind(sf, sf2)
   areas_indiv <- sf %>%
+    # select(id_var_new={{id_var}}) %>%
     select({{id_var}}) %>%
     filter({{id_var}} %in% ids_intersecting) %>%
     mutate(area = st_area(.)%>% units::set_units(unit, mode = "standard"))%>%
