@@ -73,11 +73,15 @@ ovr_get_overlap_pairs <- function(sf, sf2=NULL, id_var = NULL, unit = "m2", pre_
     sf::st_set_geometry(NULL) %>%
     as_tibble()%>%
     mutate(dyad = purrr::map2_chr(row_A, row_B, ~paste(sort(c(.x, .y)), collapse = " "))) %>%
-    relocate(dyad) %>%
-    group_by(dyad) %>%
-    ## want either second (ordered) or first
-    slice(if(has_sf2) 1 else 2) %>%
-    ungroup()
+    relocate(dyad)
+
+  ## If only 1sf: dyads are duplicated, take second
+  if(!has_sf2) {
+    inter_df_raw <- inter_df_raw |>
+      group_by(dyad) %>%
+      slice(2) %>%
+      ungroup()
+  }
 
   ## Compute polygon area for each intersecting ones
   ids_intersecting <- unique(c(inter_df_raw$row_A, inter_df_raw$row_B))
