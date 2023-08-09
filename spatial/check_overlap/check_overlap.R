@@ -83,9 +83,8 @@ ovr_get_overlap_pairs <- function(sf, sf2=NULL, id_var = NULL, unit = "m2", pre_
   ids_intersecting <- unique(c(inter_df_raw$row_A, inter_df_raw$row_B))
   if(has_sf2) sf <- rbind(sf, sf2)
   areas_indiv <- sf %>%
-    # select(id_var_new={{id_var}}) %>%
-    select({{id_var}}) %>%
-    filter({{id_var}} %in% ids_intersecting) %>%
+    select(id_var_new={{id_var}}) %>%
+    filter(id_var_new %in% ids_intersecting) %>%
     mutate(area = st_area(.)%>% units::set_units(unit, mode = "standard"))%>%
     sf::st_set_geometry(NULL) %>%
     as_tibble()
@@ -93,9 +92,9 @@ ovr_get_overlap_pairs <- function(sf, sf2=NULL, id_var = NULL, unit = "m2", pre_
   ## add indiv area to intersect area, compute overlap
   inter_df_raw%>%
     left_join(areas_indiv %>%
-                rename(row_A = {{id_var}}, area_A = area), by = "row_A") %>%
+                rename(row_A = id_var_new, area_A = area), by = "row_A") %>%
     left_join(areas_indiv %>%
-                rename(row_B = {{id_var}}, area_B = area), by = "row_B") %>%
+                rename(row_B = id_var_new, area_B = area), by = "row_B") %>%
     mutate(across(c(area_A, area_B), list(overlapped=~100*units::drop_units(area_inter/.))))
 
 }
