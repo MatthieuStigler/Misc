@@ -1,0 +1,28 @@
+var geom_1 = ee.Geometry.Polygon([[[-73.83, 2.43] ,[-73.83, 2.02],
+                                        [-73.14, 2.02],[-73.14, 2.43]]])
+
+var TMF = ee.ImageCollection('projects/JRC/TMF/v1_2021/DeforestationYear').mosaic().select(["DeforestationYear"], ["lossyear"])
+var TMF_int = TMF.toInt16()
+var GFW= ee.Image("UMD/hansen/global_forest_change_2022_v1_10").select("lossyear")
+
+print("TMF", TMF)
+print("TMF_int", TMF_int)
+print("GFW", GFW)
+
+var pixel_area_img = ee.Image.pixelArea().divide(1000000).rename("area")
+var pixel_area_forest_GFW = pixel_area_img.addBands(GFW)
+var pixel_area_forest_TMF = pixel_area_img.addBands(TMF)
+
+Map.addLayer(TMF, {}, "TMF")
+Map.addLayer(TMF_int, {}, "TMF_int")
+Map.addLayer(GFW, {}, "Hansen")
+
+    
+var out_histo = pixel_area_forest_TMF.reduceRegion({
+      reducer: ee.Reducer.sum().group(1, "lossyear"),
+      geometry: geom_1,
+      scale: 500,
+      maxPixels: 10e12}).get("groups")
+
+print(out_histo)
+
