@@ -16,14 +16,34 @@ eegfw_get_mask <- function(treecover2000_param =90, han_version = "UMD/hansen/gl
 }
 
 #' @param scale
+#  eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
+# han_version = "UMD/hansen/global_forest_change_2022_v1_10",  = c("lossyear", "loss")){
+
 eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
                            han_version = "UMD/hansen/global_forest_change_2022_v1_10"){
   
-  # Hansen data
   gfw <- ee$Image(han_version)
+  gfw <- gfw$select(list("lossyear", "loss"), list("lossyear", "losstotal"))
+  general_get_dfrt(FC=FC, image=gfw,
+                   mask=mask, scale=scale, ensure_empty = ensure_empty, dfrt_year_var="lossyear")
+}
+
+eeTMF_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
+                           version = 'projects/JRC/TMF/v1_2022/DeforestationYear'){
+  
+  ## get image and mosaic
+  im_mos <- ee$ImageCollection(version)$mosaic()  
+  general_get_dfrt(FC=FC, image=im_mos, dfrt_year_var = "DeforestationYear",
+                   mask=mask, scale=scale, ensure_empty = ensure_empty)
+}
+
+  
+general_get_dfrt <- function(FC, image, mask= NULL, scale =30, ensure_empty=FALSE,
+                             dfrt_year_var= "lossyear"){
+  
   
   ## 
-  target_im <- if(!is.null(mask)) mask else gfw
+  target_im <- if(!is.null(mask)) mask else image
   target_proj <- target_im$projection()
   target_scale <- target_im$projection()$nominalScale()
 
@@ -36,8 +56,8 @@ eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
   ## Create 1 image, for area calculation
   pixel_ones <- ee$Image(1)$rename("area_ee")$reproject(target_proj, scale= target_scale)
   
-  ## select Hansen vars
-  hansen_keep <- gfw$select(list("lossyear", "loss"), list("lossyear", "losstotal"))$reproject(target_proj, scale= target_scale)
+  ## select layers
+  hansen_keep <- image$reproject(target_proj, scale= target_scale)
   
   ## mask
   if(!is.null(mask)) {
@@ -54,21 +74,21 @@ eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
   }
   
   ## get vars
-  vars_image <- pixel_area_forest$bandNames()$getInfo()
-  other_vars <- as.list(vars_image %>% purrr::discard(~stringr::str_detect(., "area$|lossyear$")))
+  vars_image_all <- pixel_area_forest$bandNames()$getInfo()
+  vars_other <- as.list(vars_image_all %>% purrr::discard(~. %in% c("area", dfrt_year_var)))
   
   ## map reducers
   res_out <- FC$map(function(feature){
     ## grouped reducer: area by lossyear
-    out_histo = pixel_area_forest$select(list("area", "lossyear"))$reduceRegion(
-      reducer= ee$Reducer$sum()$group(1, "lossyear"),
+    out_histo = pixel_area_forest$select(list("area", dfrt_year_var))$reduceRegion(
+      reducer= ee$Reducer$sum()$group(1, dfrt_year_var),
       geometry= feature$geometry(),
       scale= 30,
       maxPixels= 10e12)$get("groups")
     
     ## ensure that polygons without values are still returned
     if(ensure_empty){
-      empty_list <-  ee$Dictionary$fromLists(list("lossyear", "sum"),
+      empty_list <-  ee$Dictionary$fromLists(list(dfrt_year_var, "sum"),
                                              ee$List$`repeat`(-999, 2))
       out_histo <- ee$List(out_histo)$
         map(ee_utils_pyfunc(function(x)  ee$Dictionary(x)$combine(empty_list, FALSE)))
@@ -76,7 +96,7 @@ eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
     }
     
     ## reducer: recompute pixel area and mask
-    simple_sum_others = pixel_area_forest$select(other_vars)$
+    simple_sum_others = pixel_area_forest$select(vars_other)$
       multiply(pixel_area_forest$select("area"))$
       reduceRegion(
         reducer= ee$Reducer$sum(),
