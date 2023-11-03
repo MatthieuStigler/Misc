@@ -31,9 +31,11 @@ eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
 eeTMF_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
                            version = 'projects/JRC/TMF/v1_2022/DeforestationYear'){
   
+  dfrt_year_var <- ifelse(grepl("v1_2021", version), "DeforestationYear", "constant")
+  
   ## get image and mosaic
   im_mos <- ee$ImageCollection(version)$mosaic()  
-  general_get_dfrt(FC=FC, image=im_mos, dfrt_year_var = "DeforestationYear",
+  general_get_dfrt(FC=FC, image=im_mos, dfrt_year_var = dfrt_year_var,
                    mask=mask, scale=scale, ensure_empty = ensure_empty)
 }
 
