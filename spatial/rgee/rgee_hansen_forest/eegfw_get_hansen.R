@@ -85,7 +85,7 @@ general_get_dfrt <- function(FC, image, mask= NULL, scale =30, ensure_empty=FALS
     out_histo = pixel_area_forest$select(list("area", dfrt_year_var))$reduceRegion(
       reducer= ee$Reducer$sum()$group(1, dfrt_year_var),
       geometry= feature$geometry(),
-      scale= 30,
+      scale= scale,
       maxPixels= 10e12)$get("groups")
     
     ## ensure that polygons without values are still returned
