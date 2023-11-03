@@ -23,7 +23,7 @@ devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/mas
 ```
 
 ```
-## ℹ SHA-1 hash of file is "1e6ce23c19917b99aef779e7cc3a73d371bc51c8"
+## ℹ SHA-1 hash of file is "1db1dd4a831415b1a704a7544233ff699b29a89c"
 ```
 
 Load libraries, authenticate:
@@ -41,19 +41,12 @@ library(sf)
 ```r
 library(rgee)
 
-ee_Initialize(user = "XXX", gcs = TRUE)
+ee_Initialize(user = "XXX", gcs = FALSE)
 ```
 
-```
-## ── rgee 1.1.5 ─────────────────────────────────────── earthengine-api 0.1.339 ── 
-##  ✔ user: XXX 
-##  ✔ GCS credentials:
- ✔ GCS credentials:  FOUND
-##  ✔ Initializing Google Earth Engine:
- ✔ Initializing Google Earth Engine:  DONE!
-## 
- ✔ Earth Engine account: users/XXX 
-## ────────────────────────────────────────────────────────────────────────────────
+
+```r
+## set to `gcs = TRUE` if you want to export after with ee_table_to_gcs()
 ```
 
 Create pseudo input polygons:
@@ -73,11 +66,6 @@ ee_as_sf(FC)
 ## Registered S3 method overwritten by 'geojsonsf':
 ##   method        from   
 ##   print.geojson geojson
-```
-
-```
-## Warning in fun(libname, pkgname): rgeos: versions of GEOS runtime 3.10.2-CAPI-1.16.0
-## and GEOS at installation 3.8.0-CAPI-1.13.1differ
 ```
 
 ```
@@ -102,20 +90,20 @@ eegfw_quick_process(ee=out_EE)
 ```
 
 ```
-## # A tibble: 42 × 5
+## # A tibble: 44 × 5
 ##    area_ee id    losstotal lossyear   sum
 ##      <dbl> <chr>     <dbl>    <int> <dbl>
-##  1   3480. A          871.        1 22.4 
-##  2   3480. A          871.        2 13.5 
-##  3   3480. A          871.        3  9.84
-##  4   3480. A          871.        4 52.1 
-##  5   3480. A          871.        5  8.40
-##  6   3480. A          871.        6 37.7 
-##  7   3480. A          871.        7 25.6 
-##  8   3480. A          871.        8 16.9 
-##  9   3480. A          871.        9 29.0 
-## 10   3480. A          871.       10 30.2 
-## # … with 32 more rows
+##  1   3480. A          935.        1 22.4 
+##  2   3480. A          935.        2 13.5 
+##  3   3480. A          935.        3  9.84
+##  4   3480. A          935.        4 52.1 
+##  5   3480. A          935.        5  8.40
+##  6   3480. A          935.        6 37.7 
+##  7   3480. A          935.        7 25.6 
+##  8   3480. A          935.        8 16.9 
+##  9   3480. A          935.        9 29.0 
+## 10   3480. A          935.       10 30.2 
+## # ℹ 34 more rows
 ```
 
 ## Run with mask
@@ -128,21 +116,54 @@ eegfw_quick_process(ee=out_mask_EE)
 ```
 
 ```
-## # A tibble: 44 × 6
+## # A tibble: 46 × 6
 ##    area_ee id    losstotal mask_hansen lossyear     sum
 ##      <dbl> <chr>     <dbl>       <dbl>    <int>   <dbl>
-##  1   2994. A          715.       2525.        0 1810.  
-##  2   2994. A          715.       2525.        1   17.6 
-##  3   2994. A          715.       2525.        2   10.8 
-##  4   2994. A          715.       2525.        3    7.98
-##  5   2994. A          715.       2525.        4   40.6 
-##  6   2994. A          715.       2525.        5    6.49
-##  7   2994. A          715.       2525.        6   28.9 
-##  8   2994. A          715.       2525.        7   20.2 
-##  9   2994. A          715.       2525.        8   13.4 
-## 10   2994. A          715.       2525.        9   23.6 
-## # … with 34 more rows
+##  1   2994. A          767.       2525.        0 1758.  
+##  2   2994. A          767.       2525.        1   17.6 
+##  3   2994. A          767.       2525.        2   10.8 
+##  4   2994. A          767.       2525.        3    7.98
+##  5   2994. A          767.       2525.        4   40.6 
+##  6   2994. A          767.       2525.        5    6.49
+##  7   2994. A          767.       2525.        6   28.9 
+##  8   2994. A          767.       2525.        7   20.2 
+##  9   2994. A          767.       2525.        8   13.4 
+## 10   2994. A          767.       2525.        9   23.6 
+## # ℹ 36 more rows
 ```
+
+
+## Use TMF instead
+
+To use the TMF product, use:
+
+
+```r
+eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC))
+```
+
+```
+## # A tibble: 3 × 4
+##   area_ee id    constant   sum
+##     <dbl> <chr>    <int> <dbl>
+## 1   3480. A          316 3480.
+## 2   3307. B            6 2835.
+## 3   3307. B           46  472.
+```
+
+```r
+eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC, version='projects/JRC/TMF/v1_2021/DeforestationYear'))
+```
+
+```
+## # A tibble: 3 × 4
+##   area_ee id    DeforestationYear   sum
+##     <dbl> <chr>             <dbl> <dbl>
+## 1   3480. A                271.   3480.
+## 2   3307. B                  2.93 2835.
+## 3   3307. B                 43.0   472.
+```
+
 
 Eventually, export task:
 

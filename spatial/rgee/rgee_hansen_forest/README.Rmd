@@ -30,7 +30,8 @@ library(dplyr, warn.conflicts = FALSE)
 library(sf)
 library(rgee)
 
-ee_Initialize(user = "XXX", gcs = TRUE)
+ee_Initialize(user = "XXX", gcs = FALSE)
+## set to `gcs = TRUE` if you want to export after with ee_table_to_gcs()
 ```
 
 Create pseudo input polygons:
@@ -61,6 +62,18 @@ mask_90 <- eegfw_get_mask()
 out_mask_EE <- eegfw_get_dfrt(FC = FC, mask =mask_90)
 eegfw_quick_process(ee=out_mask_EE)
 ```
+
+
+## Use TMF instead
+
+To use the TMF product, use:
+
+```{r}
+
+eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC))
+eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC, version='projects/JRC/TMF/v1_2021/DeforestationYear'))
+```
+
 
 Eventually, export task:
 
