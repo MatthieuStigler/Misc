@@ -52,7 +52,8 @@ ee_as_sf(FC)
 
 ```{r}
 out_EE <- eegfw_get_dfrt(FC = FC)
-eegfw_quick_process(ee=out_EE)
+GFW_masked_unmasked <- eegfw_quick_process(ee=out_EE)
+GFW_masked_unmasked
 ```
 
 ## Run with mask
@@ -60,7 +61,8 @@ eegfw_quick_process(ee=out_EE)
 ```{r}
 mask_90 <- eegfw_get_mask()
 out_mask_EE <- eegfw_get_dfrt(FC = FC, mask =mask_90)
-eegfw_quick_process(ee=out_mask_EE)
+GFW_masked <- eegfw_quick_process(ee=out_mask_EE)
+GFW_masked
 ```
 
 
@@ -69,13 +71,34 @@ eegfw_quick_process(ee=out_mask_EE)
 To use the TMF product, use:
 
 ```{r}
-
-eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC))
-eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC, version='projects/JRC/TMF/v1_2021/DeforestationYear'))
+TMF_v2022 <- eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC))
+TMF_v2021 <- eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC, version='projects/JRC/TMF/v1_2021/DeforestationYear'))
 ```
 
+## combine results and plot
 
-Eventually, export task:
+```{r}
+GFW_TMF <- rbind(TMF_v2022 %>% 
+                   mutate(source= "TMF"),
+                 GFW_masked %>% 
+                   select(area_ee, id, DeforestationYear=lossyear, sum) %>% 
+                   mutate(source = "GFW",
+                          DeforestationYear=if_else(DeforestationYear==0, 0, DeforestationYear+2000)))
+
+library(ggplot2)
+GFW_TMF %>% 
+  filter(DeforestationYear!=0) %>% 
+  ggplot(aes(x=DeforestationYear, y=sum, color=id, linetype=source))+
+  geom_line()+
+  facet_wrap(~id, scales="free", ncol=1)+
+  ggtitle("Comparing GFW and TMF (omitting 0 year = no def)")
+```
+
+## Export task
+
+Eventually, export task using `rgee::ee_table_to_drive()` for google drive or `rgee::ee_table_to_gcs()` for google cloud storage. For the latter, make sure you initialized `ee_Initialize(user = "XXX", gcs = TRUE)` with `gcs = TRUE`. 
+
+Example with `ee_table_to_gcs()`:
 
 ```{r, eval=FALSE}
 ## Try export

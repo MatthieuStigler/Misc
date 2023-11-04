@@ -23,7 +23,7 @@ devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/mas
 ```
 
 ```
-## ℹ SHA-1 hash of file is "1db1dd4a831415b1a704a7544233ff699b29a89c"
+## ℹ SHA-1 hash of file is "436ad9af96ca9bcb2e926434db84689738b260ce"
 ```
 
 Load libraries, authenticate:
@@ -44,6 +44,17 @@ library(rgee)
 ee_Initialize(user = "XXX", gcs = FALSE)
 ```
 
+```
+## ── rgee 1.1.7 ─────────────────────────────────────── earthengine-api 0.1.358 ── 
+##  ✔ user: XXX
+##  ✔ Initializing Google Earth Engine:
+ ✔ Initializing Google Earth Engine:  DONE!
+## 
+ ✔ Earth Engine account: XXX
+## 
+ ✔ Python Path: XXX
+## ────────────────────────────────────────────────────────────────────────────────
+```
 
 ```r
 ## set to `gcs = TRUE` if you want to export after with ee_table_to_gcs()
@@ -86,7 +97,8 @@ ee_as_sf(FC)
 
 ```r
 out_EE <- eegfw_get_dfrt(FC = FC)
-eegfw_quick_process(ee=out_EE)
+GFW_masked_unmasked <- eegfw_quick_process(ee=out_EE)
+GFW_masked_unmasked
 ```
 
 ```
@@ -112,7 +124,8 @@ eegfw_quick_process(ee=out_EE)
 ```r
 mask_90 <- eegfw_get_mask()
 out_mask_EE <- eegfw_get_dfrt(FC = FC, mask =mask_90)
-eegfw_quick_process(ee=out_mask_EE)
+GFW_masked <- eegfw_quick_process(ee=out_mask_EE)
+GFW_masked
 ```
 
 ```
@@ -139,33 +152,37 @@ To use the TMF product, use:
 
 
 ```r
-eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC))
+TMF_v2022 <- eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC))
+TMF_v2021 <- eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC, version='projects/JRC/TMF/v1_2021/DeforestationYear'))
 ```
 
-```
-## # A tibble: 3 × 4
-##   area_ee id    constant   sum
-##     <dbl> <chr>    <int> <dbl>
-## 1   3480. A          316 3480.
-## 2   3307. B            6 2835.
-## 3   3307. B           46  472.
-```
+## combine results and plot
+
 
 ```r
-eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC, version='projects/JRC/TMF/v1_2021/DeforestationYear'))
+GFW_TMF <- rbind(TMF_v2022 %>% 
+                   mutate(source= "TMF"),
+                 GFW_masked %>% 
+                   select(area_ee, id, DeforestationYear=lossyear, sum) %>% 
+                   mutate(source = "GFW",
+                          DeforestationYear=if_else(DeforestationYear==0, 0, DeforestationYear+2000)))
+
+library(ggplot2)
+GFW_TMF %>% 
+  filter(DeforestationYear!=0) %>% 
+  ggplot(aes(x=DeforestationYear, y=sum, color=id, linetype=source))+
+  geom_line()+
+  facet_wrap(~id, scales="free", ncol=1)+
+  ggtitle("Comparing GFW and TMF (omitting 0 year = no def)")
 ```
 
-```
-## # A tibble: 3 × 4
-##   area_ee id    DeforestationYear   sum
-##     <dbl> <chr>             <dbl> <dbl>
-## 1   3480. A                271.   3480.
-## 2   3307. B                  2.93 2835.
-## 3   3307. B                 43.0   472.
-```
+![](README_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
 
+## Export task
 
-Eventually, export task:
+Eventually, export task using `rgee::ee_table_to_drive()` for google drive or `rgee::ee_table_to_gcs()` for google cloud storage. For the latter, make sure you initialized `ee_Initialize(user = "XXX", gcs = TRUE)` with `gcs = TRUE`. 
+
+Example with `ee_table_to_gcs()`:
 
 
 ```r
