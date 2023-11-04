@@ -28,14 +28,36 @@ eegfw_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
                    mask=mask, scale=scale, ensure_empty = ensure_empty, dfrt_year_var="lossyear")
 }
 
+#' Fix multiple issues in TMF
+eeTMF_correct_mode <- function(version = 'projects/JRC/TMF/v1_2022/DeforestationYear'){
+  
+  TMF_im_col <- ee$ImageCollection(version)
+  
+  ## mosaic, fix inconsistency between v2022 and v2021
+  dfrt_year_var <- ifelse(grepl("v1_2021", version), "DeforestationYear", "constant")
+  TMF_mosaic <- TMF_im_col$mosaic()$select(list(dfrt_year_var), list("DeforestationYear"))
+  
+  ## Change pyramid Policy, from mean to mode
+  proj_TMF_1  <- ee$Image(TMF_im_col$first())$projection()
+  
+  TMF_mosaic_piramideMode <- TMF_mosaic$
+    reproject(crs= proj_TMF_1)$
+    reduceResolution(
+      reducer= ee$Reducer$mode(),
+      maxPixels= 1024
+    )
+  
+  TMF_mosaic_piramideMode
+}
+
 eeTMF_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
                            version = 'projects/JRC/TMF/v1_2022/DeforestationYear'){
   
-  dfrt_year_var <- ifelse(grepl("v1_2021", version), "DeforestationYear", "constant")
+  ## get image, mosaic, address inconsistency in naming and in pyramid policy
+  TMF_mosaic_modePyramid <- eeTMF_correct_mode(version=version)
   
-  ## get image and mosaic
-  im_mos <- ee$ImageCollection(version)$mosaic()  
-  general_get_dfrt(FC=FC, image=im_mos, dfrt_year_var = dfrt_year_var,
+  ## apply general function
+  general_get_dfrt(FC=FC, image=TMF_mosaic_modePyramid, dfrt_year_var = "DeforestationYear",
                    mask=mask, scale=scale, ensure_empty = ensure_empty)
 }
 
