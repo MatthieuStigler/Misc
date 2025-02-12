@@ -13,7 +13,7 @@ output:
 
 This script compute the dyadic (1-1) overlap of polygons among a given collection with `ovr_get_overlap_pairs`. It returns a data frame where each row is an overlapping dyad A-B, with respective areas and percentage of overlap with respect to A and B. 
 
-Function `ovr_add_group()`  uses `igraph` tools to indicate groups of overlapping polygons int eh output from `ovr_get_overlap_pairs`. 
+Function `ovr_add_group()`  uses `igraph` tools to indicate groups of overlapping polygons in the output from `ovr_get_overlap_pairs()`. 
 
 ## Functions description:
 
@@ -25,9 +25,9 @@ Function `ovr_add_group()`  uses `igraph` tools to indicate groups of overlappin
   faster...
   - @param `inter_make_valid` whether to repair potentially invalid values
   - @param `sf2` NULL. to compare two groups of polygons
-  - @returns a tibble where each row represents an overlapping A-B dyad,  and columns indicate the id of the dyad, the area of each polygon, their interscetion and  percentage of overlap
+  - @returns a tibble where each row represents an overlapping A-B dyad,  and columns indicate the id of the dyad, the area of each polygon, their intersection and  percentage of overlap
 - `ovr_add_group()`:
-  - @param df_inter the output from `ovr_get_overlap_pairs`
+  - @param `df_inter` the output from `ovr_get_overlap_pairs()`
 
 ## demo
 
