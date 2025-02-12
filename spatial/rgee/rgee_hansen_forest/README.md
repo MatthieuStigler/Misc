@@ -11,14 +11,26 @@ output:
 
 # Code to get hansen data with rgee
 
-This code simplifies the procedure to get Hansen forest loss data, including an initial step to mask pixels using the `treecover2000` raster layer. 
+This code simplifies the procedure to get Hansen forest loss data in R using `rgee`, including an initial step to mask pixels using the `treecover2000` raster layer. 
+
+Main functions:
+
+- `eegfw_get_mask(treecover2000_param =90, han_version="UMD/hansen/global_forest_change_2022_v1_10")`: create a mask based on the `treecover2000` band.
+
+- `eegfw_get_dfrt(FC, mask= NULL, scale =30, ensure_empty=FALSE, han_version = "UMD/hansen/global_forest_change_2022_v1_10")`: get the Hansen `lossyear` variable for a given `FC`.
+
+- `eeTMF_get_dfrt(FC, mask= NULL, scale =30, ensure_empty=FALSE, version = 'projects/JRC/TMF/v1_2022/DeforestationYear')`
+get the TMF data for a given `FC`.
+
+- `eegfw_quick_process(ee)`: process the resulting data in R
+
 
 ## Demo
 
 Source script:
 
 
-```r
+``` r
 devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/master/spatial/rgee/rgee_hansen_forest/eegfw_get_hansen.R")
 ```
 
@@ -29,41 +41,57 @@ devtools::source_url("https://raw.githubusercontent.com/MatthieuStigler/Misc/mas
 Load libraries, authenticate:
 
 
-```r
+``` r
 library(dplyr, warn.conflicts = FALSE)
 library(sf)
 ```
 
 ```
-## Linking to GEOS 3.10.2, GDAL 3.4.3, PROJ 8.2.0; sf_use_s2() is TRUE
+## Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE
 ```
 
-```r
+``` r
 library(rgee)
 
 ee_Initialize(user = "XXX", gcs = FALSE)
 ```
 
 ```
-## ── rgee 1.1.7 ─────────────────────────────────────── earthengine-api 0.1.358 ── 
-##  ✔ user: XXX
+## Warning in ee_check_init(): Update your earthengine-api installations to
+## v0.1.317 or greater. Earlier versions are not compatible with recent changes to
+## the Earth Engine backend.
+```
+
+```
+## ── rgee 1.1.7 ───────────────────────────────────────── earthengine-api 1.5.2 ── 
+##  ✔ user: XXX 
 ##  ✔ Initializing Google Earth Engine:
+```
+
+```
+## Warning in ee_check_init(): Update your earthengine-api installations to
+## v0.1.317 or greater. Earlier versions are not compatible with recent changes to
+## the Earth Engine backend.
+```
+
+```
+## 
  ✔ Initializing Google Earth Engine:  DONE!
 ## 
- ✔ Earth Engine account: XXX
+ ✔ Earth Engine account: projects/458248970343/assets/COL_Sinchi 
 ## 
- ✔ Python Path: XXX
+ ✔ Python Path: /home/matifou/programs/anaconda3/envs/ee/bin/python 
 ## ────────────────────────────────────────────────────────────────────────────────
 ```
 
-```r
+``` r
 ## set to `gcs = TRUE` if you want to export after with ee_table_to_gcs()
 ```
 
 Create pseudo input polygons:
 
 
-```r
+``` r
 geom_1 <- ee$Geometry$Polygon(list(list(c(-73.83, 2.43) ,c(-73.83, 2.02),
                                         c(-73.14, 2.02),c(-73.14, 2.43))))
 geom_2 <- ee$Geometry$Polygon(list(list(c(-73.72, 1.86) ,c(-73.72, 1.54),
@@ -95,7 +123,7 @@ ee_as_sf(FC)
 ### Run without mask:
 
 
-```r
+``` r
 out_EE <- eegfw_get_dfrt(FC = FC)
 GFW_masked_unmasked <- eegfw_quick_process(ee=out_EE)
 GFW_masked_unmasked
@@ -107,7 +135,7 @@ GFW_masked_unmasked
 ##      <dbl> <chr>     <dbl>    <int> <dbl>
 ##  1   3480. A          935.        1 22.4 
 ##  2   3480. A          935.        2 13.5 
-##  3   3480. A          935.        3  9.84
+##  3   3480. A          935.        3  9.83
 ##  4   3480. A          935.        4 52.1 
 ##  5   3480. A          935.        5  8.40
 ##  6   3480. A          935.        6 37.7 
@@ -121,7 +149,7 @@ GFW_masked_unmasked
 ## Run with mask
 
 
-```r
+``` r
 mask_90 <- eegfw_get_mask()
 out_mask_EE <- eegfw_get_dfrt(FC = FC, mask =mask_90)
 GFW_masked <- eegfw_quick_process(ee=out_mask_EE)
@@ -132,16 +160,16 @@ GFW_masked
 ## # A tibble: 46 × 6
 ##    area_ee id    losstotal mask_hansen lossyear     sum
 ##      <dbl> <chr>     <dbl>       <dbl>    <int>   <dbl>
-##  1   2994. A          767.       2525.        0 1758.  
-##  2   2994. A          767.       2525.        1   17.6 
-##  3   2994. A          767.       2525.        2   10.8 
-##  4   2994. A          767.       2525.        3    7.98
-##  5   2994. A          767.       2525.        4   40.6 
-##  6   2994. A          767.       2525.        5    6.49
-##  7   2994. A          767.       2525.        6   28.9 
-##  8   2994. A          767.       2525.        7   20.2 
-##  9   2994. A          767.       2525.        8   13.4 
-## 10   2994. A          767.       2525.        9   23.6 
+##  1   2994. A          767.       2526.        0 1758.  
+##  2   2994. A          767.       2526.        1   17.6 
+##  3   2994. A          767.       2526.        2   10.8 
+##  4   2994. A          767.       2526.        3    7.98
+##  5   2994. A          767.       2526.        4   40.6 
+##  6   2994. A          767.       2526.        5    6.49
+##  7   2994. A          767.       2526.        6   28.9 
+##  8   2994. A          767.       2526.        7   20.2 
+##  9   2994. A          767.       2526.        8   13.4 
+## 10   2994. A          767.       2526.        9   23.6 
 ## # ℹ 36 more rows
 ```
 
@@ -151,7 +179,7 @@ GFW_masked
 To use the TMF product, use:
 
 
-```r
+``` r
 TMF_v2022 <- eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC))
 TMF_v2021 <- eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC, version='projects/JRC/TMF/v1_2021/DeforestationYear'))
 ```
@@ -159,7 +187,7 @@ TMF_v2021 <- eegfw_quick_process(ee=eeTMF_get_dfrt(FC = FC, version='projects/JR
 ## combine results and plot
 
 
-```r
+``` r
 GFW_TMF <- rbind(TMF_v2022 %>% 
                    mutate(source= "TMF"),
                  GFW_masked %>% 
@@ -185,7 +213,7 @@ Eventually, export task using `rgee::ee_table_to_drive()` for google drive or `r
 Example with `ee_table_to_gcs()`:
 
 
-```r
+``` r
 ## Try export
 ee_table_to_gcs(
   collection=coll_out,

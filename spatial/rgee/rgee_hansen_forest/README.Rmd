@@ -13,7 +13,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Code to get hansen data with rgee
 
-This code simplifies the procedure to get Hansen forest loss data, including an initial step to mask pixels using the `treecover2000` raster layer. 
+This code simplifies the procedure to get Hansen forest loss data in R using `rgee`, including an initial step to mask pixels using the `treecover2000` raster layer. 
+
+Main functions:
+
+- `eegfw_get_mask(treecover2000_param =90, han_version="UMD/hansen/global_forest_change_2022_v1_10")`: create a mask based on the `treecover2000` band.
+
+- `eegfw_get_dfrt(FC, mask= NULL, scale =30, ensure_empty=FALSE, han_version = "UMD/hansen/global_forest_change_2022_v1_10")`: get the Hansen `lossyear` variable for a given `FC`.
+
+- `eeTMF_get_dfrt(FC, mask= NULL, scale =30, ensure_empty=FALSE, version = 'projects/JRC/TMF/v1_2022/DeforestationYear')`
+get the TMF data for a given `FC`.
+
+- `eegfw_quick_process(ee)`: process the resulting data in R
+
 
 ## Demo
 
