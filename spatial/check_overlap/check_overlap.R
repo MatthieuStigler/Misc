@@ -154,6 +154,18 @@ ovr_add_group <- function(df_inter, simplify_group_key=FALSE){
   res
 }
 
+#' convert dyad data to igraph network
+#' 
+#' @param df_inter the output from `ovr_get_overlap_pairs`
+ovr_dyad_to_network <- function(df_inter){
+  
+  ## convert to igraph
+  df_inter %>%
+    relocate(row_A, row_B) %>%
+    igraph::graph_from_data_frame(directed=FALSE)
+  
+}
+
 #' Get df of poly-id group
 #' @param df output of ovr_add_group
 #' @param poly_id Name of the output id var
