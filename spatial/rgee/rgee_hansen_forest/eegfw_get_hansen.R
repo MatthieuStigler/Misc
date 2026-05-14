@@ -75,11 +75,17 @@ eeTMF_get_mask <- function(values_class = c(1,2), version = 'projects/JRC/TMF/v1
   # 1. Load the Collection (AnnualChange is a Collection, not a single Image
   imCol_raw <- ee$ImageCollection(version)
   
-  # 2. Filter to the specific year
-  image_band <- ee$Image(imCol_raw$mosaic()$select(paste0("Dec", year)))
+  # 2. Get the native projection from one of the regional images
+  native_proj <- ee$Image(imCol_raw$first())$projection()
   
-  ## remap 0-1
-  mask <- image_year$remap(from = values_class,
+  # 3. Filter to the specific year band (e.g., "Dec1990") and mosaic
+  # We apply setDefaultProjection so the mosaic "knows" it is 30m
+  image_mosaic <- imCol_raw$select(paste0("Dec", year))$
+    mosaic()$
+    setDefaultProjection(native_proj)
+  
+  ## 4. remap 0-1
+  mask <- image_mosaic$remap(from = values_class,
                            to = rep(1, length(values_class)),
                            defaultValue = 0)$rename("mask_tmf")
   ## return result
