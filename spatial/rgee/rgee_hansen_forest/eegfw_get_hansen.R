@@ -50,6 +50,43 @@ eeTMF_correct_mode <- function(version = 'projects/JRC/TMF/v1_2022/Deforestation
   TMF_mosaic_piramideMode
 }
 
+#' Create mask from JRC TMF Annual Change collection
+#' 
+#' @param values_class Numeric vector. The class values to be mapped to 1 (all others map to 0).
+#' @param version Character. The Google Earth Engine asset path (e.g., 'projects/JRC/TMF/v1_2025/AnnualChange').
+#' @param year Integer. The year to select for the mask (monitoring period: 1990–2025).
+#' 
+#' @details 
+#' This function filters the TMF Annual Change collection by year and creates a binary mask.
+#' The following class codes are used in the TMF product:
+#' \itemize{
+#'   \item \strong{1}: Undisturbed TMF
+#'   \item \strong{2}: Degraded TMF
+#'   \item \strong{3}: Deforested land
+#'   \item \strong{4}: Forest regrowth
+#'   \item \strong{5}: Water
+#'   \item \strong{6}: Other land cover
+#' }
+#' 
+#' @returns An \code{ee$Image} binary mask where 1 represents the selected classes and 0 represents everything else.
+eeTMF_get_mask <- function(values_class = c(1,2), version = 'projects/JRC/TMF/v1_2025/AnnualChanges', 
+                           year=1990){
+  
+  # 1. Load the Collection (AnnualChange is a Collection, not a single Image
+  imCol_raw <- ee$ImageCollection(version)
+  
+  # 2. Filter to the specific year
+  image_band <- ee$Image(imCol_raw$mosaic()$select(paste0("Dec", year)))
+  
+  ## remap 0-1
+  mask <- image_year$remap(from = values_class,
+                           to = rep(1, length(values_class)),
+                           defaultValue = 0)$rename("mask_tmf")
+  ## return result
+  mask$selfMask()
+}
+
+
 eeTMF_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
                            version = 'projects/JRC/TMF/v1_2022/DeforestationYear'){
   
