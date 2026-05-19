@@ -5,10 +5,15 @@
 #' @param treecover2000_param The value at which to cut. Set to 0 to keep all
 eegfw_get_mask <- function(treecover2000_param =90, han_version = "UMD/hansen/global_forest_change_2022_v1_10"){
   
+  if(treecover2000_param<0 |treecover2000_param>100) stop("Argument 'treecover2000_param' should be between 0 and 100")
+  
   # Load Hansen data
   gfw <- ee$Image(han_version)
   
+  ## Initial mask:  0: No data, 1: Mapped land surface, 2: Permanent water bodies 
   han_datamask <- gfw$select('datamask')$eq(1)
+  
+  ## forest mask:
   han_2000_mask <- gfw$select('treecover2000')$gt(treecover2000_param)
   
   ## combine masks
