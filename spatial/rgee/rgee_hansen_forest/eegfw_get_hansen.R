@@ -110,8 +110,9 @@ eeTMF_get_dfrt <- function(FC, mask= NULL, scale =30, ensure_empty=FALSE,
 }
 
   
+#' @param extra_bands optional additional ee image, summed over the whole feature, weighted by pixel area, NOT restricted by `mask`.
 general_get_dfrt <- function(FC, image, mask= NULL, scale =30, ensure_empty=FALSE,
-                             dfrt_year_var= "lossyear"){
+                             dfrt_year_var= "lossyear", extra_bands= NULL){
   
   
   ## 
@@ -143,6 +144,11 @@ general_get_dfrt <- function(FC, image, mask= NULL, scale =30, ensure_empty=FALS
   
   if(!is.null(mask)) {
     pixel_area_forest <- pixel_area_forest$addBands(mask)
+  }
+
+  ## optional: add extra_bands  
+  if(!is.null(extra_bands)) {
+    pixel_area_forest <- pixel_area_forest$addBands(extra_bands$reproject(target_proj, scale= target_scale))
   }
   
   ## get vars
